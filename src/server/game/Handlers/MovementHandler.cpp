@@ -24,12 +24,10 @@
 #include "Corpse.h"
 #include "Player.h"
 #include "MapManager.h"
-#include "Transport.h"
 #include "Battleground.h"
 #include "WaypointMovementGenerator.h"
 #include "InstanceSaveMgr.h"
 #include "ObjectMgr.h"
-#include "Vehicle.h"
 
 #define MOVEMENT_PACKET_TIME_DELAY 0
 
@@ -312,36 +310,6 @@ void WorldSession::HandleMovementOpcodes(WorldPacket& recvData)
             recvData.rfinish();                 // prevent warnings spam
             return;
         }
-
-        // if we boarded a transport, add us to it
-        if (plrMover)
-        {
-            if (!plrMover->GetTransport())
-            {
-                if (Transport* transport = plrMover->GetMap()->GetTransport(movementInfo.transport.guid))
-                    transport->AddPassenger(plrMover);
-            }
-            else if (plrMover->GetTransport()->GetGUID() != movementInfo.transport.guid)
-            {
-                plrMover->GetTransport()->RemovePassenger(plrMover);
-                if (Transport* transport = plrMover->GetMap()->GetTransport(movementInfo.transport.guid))
-                    transport->AddPassenger(plrMover);
-                else
-                    movementInfo.transport.Reset();
-            }
-        }
-
-        if (!mover->GetTransport() && !mover->GetVehicle())
-        {
-            GameObject* go = mover->GetMap()->GetGameObject(movementInfo.transport.guid);
-            if (!go || go->GetGoType() != GAMEOBJECT_TYPE_TRANSPORT)
-                movementInfo.RemoveMovementFlag(MOVEMENTFLAG_ONTRANSPORT);
-        }
-    }
-    else if (plrMover && plrMover->GetTransport())                // if we were on a transport, leave
-    {
-        plrMover->GetTransport()->RemovePassenger(plrMover);
-        movementInfo.transport.Reset();
     }
 
     // fall damage generation (ignore in flight case that can be triggered also at lags in moment teleportation to another map).
@@ -368,23 +336,6 @@ void WorldSession::HandleMovementOpcodes(WorldPacket& recvData)
     mover->SendMessageToSet(&data, _player);
 
     mover->m_movementInfo = movementInfo;
-
-    // Some vehicles allow the passenger to turn by himself
-    if (Vehicle* vehicle = mover->GetVehicle())
-    {
-        if (VehicleSeatEntry const* seat = vehicle->GetSeatForPassenger(mover))
-        {
-            if (seat->m_flags & VEHICLE_SEAT_FLAG_ALLOW_TURNING)
-            {
-                if (movementInfo.pos.GetOrientation() != mover->GetOrientation())
-                {
-                    mover->SetOrientation(movementInfo.pos.GetOrientation());
-                    mover->RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_TURNING);
-                }
-            }
-        }
-        return;
-    }
 
     mover->UpdatePosition(movementInfo.pos);
 

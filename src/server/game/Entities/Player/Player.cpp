@@ -71,7 +71,6 @@
 #include "SpellAuras.h"
 #include "SpellMgr.h"
 #include "SpellHistory.h"
-#include "Transport.h"
 #include "TicketMgr.h"
 #include "UpdateData.h"
 #include "UpdateFieldFlags.h"
@@ -1866,12 +1865,6 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
         TC_LOG_DEBUG("maps", "Player '%s' (%s) using client without required expansion tried teleport to non accessible map (MapID: %u)",
             GetName().c_str(), GetGUID().ToString().c_str(), mapid);
 
-        if (Transport* transport = GetTransport())
-        {
-            transport->RemovePassenger(this);
-            RepopAtGraveyard();                             // teleport to near graveyard if on transport, looks blizz like :)
-        }
-
         SendTransferAborted(mapid, TRANSFER_ABORT_INSUF_EXPAN_LVL, mEntry->Expansion());
 
         return false;                                       // normal client can't teleport to this map...
@@ -1879,20 +1872,9 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
     else
         TC_LOG_DEBUG("maps", "Player %s (%s) is being teleported to map (MapID: %u)", GetName().c_str(), GetGUID().ToString().c_str(), mapid);
 
-    if (m_vehicle)
-        ExitVehicle();
-
     // reset movement flags at teleport, because player will continue move with these flags after teleport
     SetUnitMovementFlags(GetUnitMovementFlags() & MOVEMENTFLAG_MASK_HAS_PLAYER_STATUS_OPCODE);
     DisableSpline();
-
-    if (Transport* transport = GetTransport())
-    {
-        if (options & TELE_TO_NOT_LEAVE_TRANSPORT)
-            AddUnitMovementFlag(MOVEMENTFLAG_ONTRANSPORT);
-        else
-            transport->RemovePassenger(this);
-    }
 
     // The player was ported to another map and loses the duel immediately.
     // We have to perform this check before the teleport, otherwise the
@@ -2026,8 +2008,6 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
                 // send transfer packets
                 WorldPacket data(SMSG_TRANSFER_PENDING, 4 + 4 + 4);
                 data << uint32(mapid);
-                if (Transport* transport = GetTransport())
-                    data << transport->GetEntry() << GetMapId();
 
                 GetSession()->SendPacket(&data);
             }
@@ -17245,50 +17225,6 @@ bool Player::LoadFromDB(ObjectGuid guid, SQLQueryHolder *holder)
             m_bgData.bgInstanceID = 0;
         }
     }
-    // currently we do not support transport in bg
-    else if (transLowGUID)
-    {
-        ObjectGuid transGUID(HighGuid::Mo_Transport, transLowGUID);
-
-        Transport* transport = nullptr;
-        if (Transport* go = HashMapHolder<Transport>::Find(transGUID))
-            transport = go;
-
-        if (transport)
-        {
-            float x = fields[31].GetFloat(), y = fields[32].GetFloat(), z = fields[33].GetFloat(), o = fields[34].GetFloat();
-            m_movementInfo.transport.pos.Relocate(x, y, z, o);
-            transport->CalculatePassengerPosition(x, y, z, &o);
-
-            if (!Trinity::IsValidMapCoord(x, y, z, o) ||
-                // transport size limited
-                std::fabs(m_movementInfo.transport.pos.GetPositionX()) > 250.0f ||
-                std::fabs(m_movementInfo.transport.pos.GetPositionY()) > 250.0f ||
-                std::fabs(m_movementInfo.transport.pos.GetPositionZ()) > 250.0f)
-            {
-                TC_LOG_ERROR("entities.player", "Player::LoadFromDB: Player (%s) has invalid transport coordinates (X: %f Y: %f Z: %f O: %f). Teleport to bind location.",
-                    guid.ToString().c_str(), x, y, z, o);
-
-                m_movementInfo.transport.Reset();
-
-                RelocateToHomebind();
-            }
-            else
-            {
-                Relocate(x, y, z, o);
-                mapId = transport->GetMapId();
-
-                transport->AddPassenger(this);
-            }
-        }
-        else
-        {
-            TC_LOG_ERROR("entities.player", "Player::LoadFromDB: Player (%s) has problems with transport guid (%u). Teleport to bind location.",
-                guid.ToString().c_str(), transLowGUID);
-
-            RelocateToHomebind();
-        }
-    }
     // currently we do not support taxi in instance
     else if (!taxi_nodes.empty())
     {
@@ -19170,9 +19106,6 @@ void Player::SaveToDB(bool create /*=false*/)
         stmt->setFloat(index++, finiteAlways(GetTransOffsetZ()));
         stmt->setFloat(index++, finiteAlways(GetTransOffsetO()));
         ObjectGuid::LowType transLowGUID = 0;
-        if (GetTransport())
-            transLowGUID = GetTransport()->GetGUID().GetCounter();
-        stmt->setUInt32(index++, transLowGUID);
 
         std::ostringstream ss;
         ss << m_taxi;
@@ -19295,9 +19228,6 @@ void Player::SaveToDB(bool create /*=false*/)
         stmt->setFloat(index++, finiteAlways(GetTransOffsetZ()));
         stmt->setFloat(index++, finiteAlways(GetTransOffsetO()));
         ObjectGuid::LowType transLowGUID = 0;
-        if (GetTransport())
-            transLowGUID = GetTransport()->GetGUID().GetCounter();
-        stmt->setUInt32(index++, transLowGUID);
 
         std::ostringstream ss;
         ss << m_taxi;
@@ -20491,8 +20421,6 @@ void Player::StopCastingCharm()
     {
         if (charm->ToCreature()->HasUnitTypeMask(UNIT_MASK_PUPPET))
             static_cast<Puppet*>(charm)->UnSummon();
-        else if (charm->IsVehicle())
-            ExitVehicle();
     }
     if (GetCharmGUID())
         charm->RemoveCharmAuras();
@@ -20627,12 +20555,6 @@ bool Player::RemoveMItem(uint32 id)
     return mMitems.erase(id) ? true : false;
 }
 
-void Player::SendOnCancelExpectedVehicleRideAura() const
-{
-    WorldPacket data(SMSG_ON_CANCEL_EXPECTED_RIDE_VEHICLE_AURA, 0);
-    GetSession()->SendPacket(&data);
-}
-
 void Player::PetSpellInitialize()
 {
     Pet* pet = GetPet();
@@ -20707,57 +20629,6 @@ void Player::PossessSpellInitialize()
     data << uint8(0);                                       // spells count
     data << uint8(0);                                       // cooldowns count
 
-    GetSession()->SendPacket(&data);
-}
-
-void Player::VehicleSpellInitialize()
-{
-    Creature* vehicle = GetVehicleCreatureBase();
-    if (!vehicle)
-        return;
-
-    uint8 cooldownCount = vehicle->GetSpellHistory()->GetCooldownsSizeForPacket();
-
-    WorldPacket data(SMSG_PET_SPELLS, 8 + 2 + 4 + 4 + 4 * 10 + 1 + 1 + cooldownCount * (4 + 2 + 4 + 4));
-    data << uint64(vehicle->GetGUID());                     // Guid
-    data << uint16(0);                                      // Pet Family (0 for all vehicles)
-    data << uint32(vehicle->IsSummon() ? vehicle->ToTempSummon()->GetTimer() : 0); // Duration
-    // The following three segments are read by the client as one uint32
-    data << uint8(vehicle->GetReactState());                // React State
-    data << uint8(0);                                       // Command State
-    data << uint16(0x800);                                  // DisableActions (set for all vehicles)
-
-    for (uint32 i = 0; i < MAX_CREATURE_SPELLS; ++i)
-    {
-        uint32 spellId = vehicle->m_spells[i];
-        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
-        if (!spellInfo)
-        {
-            data << uint16(0) << uint8(0) << uint8(i+8);
-            continue;
-        }
-
-        if (!sConditionMgr->IsObjectMeetingVehicleSpellConditions(vehicle->GetEntry(), spellId, this, vehicle))
-        {
-            TC_LOG_DEBUG("condition", "Player::VehicleSpellInitialize: Player '%s' (%s) doesn't meet conditions for vehicle (Entry: %u, Spell: %u)",
-                GetName().c_str(), GetGUID().ToString().c_str(), vehicle->ToCreature()->GetEntry(), spellId);
-            data << uint16(0) << uint8(0) << uint8(i+8);
-            continue;
-        }
-
-        if (spellInfo->IsPassive())
-            vehicle->CastSpell(vehicle, spellId, true);
-
-        data << uint32(MAKE_UNIT_ACTION_BUTTON(spellId, i+8));
-    }
-
-    for (uint32 i = MAX_CREATURE_SPELLS; i < MAX_SPELL_CONTROL_BAR; ++i)
-        data << uint32(0);
-
-    data << uint8(0); // Auras?
-
-    // Cooldowns
-    vehicle->GetSpellHistory()->WritePacket<Pet>(data);
     GetSession()->SendPacket(&data);
 }
 
@@ -21113,7 +20984,6 @@ bool Player::ActivateTaxiPathTo(std::vector<uint32> const& nodes, Creature* npc 
 
     StopCastingCharm();
     StopCastingBindSight();
-    ExitVehicle();
 
     // stop trade (client cancel trade at taxi map open but cheating tools can be used for reopen it)
     TradeCancel(true);
@@ -24131,7 +24001,7 @@ void Player::SetViewpoint(WorldObject* target, bool apply)
         // farsight dynobj or puppet may be very far away
         UpdateVisibilityOf(target);
 
-        if (target->isType(TYPEMASK_UNIT) && target != GetVehicleBase())
+        if (target->isType(TYPEMASK_UNIT))
             static_cast<Unit*>(target)->AddPlayerToVision(this);
         SetSeer(target);
     }
@@ -24145,7 +24015,7 @@ void Player::SetViewpoint(WorldObject* target, bool apply)
             return;
         }
 
-        if (target->isType(TYPEMASK_UNIT) && target != GetVehicleBase())
+        if (target->isType(TYPEMASK_UNIT))
             static_cast<Unit*>(target)->RemovePlayerFromVision(this);
 
         //must immediately set seer back otherwise may crash
@@ -25775,7 +25645,6 @@ void Player::ActivateSpec(uint8 spec)
 
     ClearAllReactives();
     UnsummonAllTotems();
-    ExitVehicle();
     RemoveAllControlled();
 
     // remove single target auras at other targets

@@ -188,8 +188,6 @@ TC_GAME_API extern TaxiPathSetBySource                       sTaxiPathSetBySourc
 TC_GAME_API extern TaxiPathNodesByPath                       sTaxiPathNodesByPath;
 TC_GAME_API extern DBCStorage <TeamContributionPointsEntry>  sTeamContributionPointsStore;
 TC_GAME_API extern DBCStorage <TotemCategoryEntry>           sTotemCategoryStore;
-TC_GAME_API extern DBCStorage <VehicleEntry>                 sVehicleStore;
-TC_GAME_API extern DBCStorage <VehicleSeatEntry>             sVehicleSeatStore;
 TC_GAME_API extern DBCStorage <WMOAreaTableEntry>            sWMOAreaTableStore;
 //TC_GAME_API extern DBCStorage <WorldMapAreaEntry>           sWorldMapAreaStore; -- use Zone2MapCoordinates and Map2ZoneCoordinates
 TC_GAME_API extern DBCStorage <WorldMapOverlayEntry>         sWorldMapOverlayStore;

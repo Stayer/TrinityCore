@@ -20,7 +20,6 @@
 #include "Log.h"
 #include "SharedDefines.h"
 #include "SpellMgr.h"
-#include "TransportMgr.h"
 #include "DBCfmt.h"
 #include "Timer.h"
 #include "ObjectDefines.h"
@@ -211,8 +210,6 @@ DBCStorage <TeamContributionPointsEntry> sTeamContributionPointsStore(TeamContri
 DBCStorage <TotemCategoryEntry> sTotemCategoryStore(TotemCategoryEntryfmt);
 DBCStorage <TransportAnimationEntry> sTransportAnimationStore(TransportAnimationfmt);
 DBCStorage <TransportRotationEntry> sTransportRotationStore(TransportRotationfmt);
-DBCStorage <VehicleEntry> sVehicleStore(VehicleEntryfmt);
-DBCStorage <VehicleSeatEntry> sVehicleSeatStore(VehicleSeatEntryfmt);
 DBCStorage <WMOAreaTableEntry> sWMOAreaTableStore(WMOAreaTableEntryfmt);
 DBCStorage <WorldMapAreaEntry> sWorldMapAreaStore(WorldMapAreaEntryfmt);
 DBCStorage <WorldMapOverlayEntry> sWorldMapOverlayStore(WorldMapOverlayEntryfmt);
@@ -665,28 +662,6 @@ void LoadDBCStores(const std::string& dataPath)
 
     LoadDBC(availableDbcLocales, bad_dbc_files, sTeamContributionPointsStore, dbcPath, "TeamContributionPoints.dbc");
     LoadDBC(availableDbcLocales, bad_dbc_files, sTotemCategoryStore,          dbcPath, "TotemCategory.dbc");
-    LoadDBC(availableDbcLocales, bad_dbc_files, sTransportAnimationStore,     dbcPath, "TransportAnimation.dbc");
-    for (uint32 i = 0; i < sTransportAnimationStore.GetNumRows(); ++i)
-    {
-        TransportAnimationEntry const* anim = sTransportAnimationStore.LookupEntry(i);
-        if (!anim)
-            continue;
-
-        sTransportMgr->AddPathNodeToTransport(anim->TransportEntry, anim->TimeSeg, anim);
-    }
-
-    LoadDBC(availableDbcLocales, bad_dbc_files, sTransportRotationStore,     dbcPath, "TransportRotation.dbc");
-    for (uint32 i = 0; i < sTransportRotationStore.GetNumRows(); ++i)
-    {
-        TransportRotationEntry const* rot = sTransportRotationStore.LookupEntry(i);
-        if (!rot)
-            continue;
-
-        sTransportMgr->AddPathRotationToTransport(rot->TransportEntry, rot->TimeSeg, rot);
-    }
-
-    LoadDBC(availableDbcLocales, bad_dbc_files, sVehicleStore,                dbcPath, "Vehicle.dbc");
-    LoadDBC(availableDbcLocales, bad_dbc_files, sVehicleSeatStore,            dbcPath, "VehicleSeat.dbc");
 
     LoadDBC(availableDbcLocales, bad_dbc_files, sWMOAreaTableStore,           dbcPath, "WMOAreaTable.dbc");
     for (uint32 i = 0; i < sWMOAreaTableStore.GetNumRows(); ++i)

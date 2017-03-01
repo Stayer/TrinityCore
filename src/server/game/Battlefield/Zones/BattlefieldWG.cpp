@@ -530,7 +530,6 @@ bool BattlefieldWG::SetupBattlefield()
         }
     }
 
-    UpdateCounterVehicle(true);
     return true;
 }
 
@@ -611,31 +610,8 @@ void BattlefieldWG::OnBattleStart()
         }
     }
 
-    // Initialize vehicle counter
-    UpdateCounterVehicle(true);
     // Send start warning to all players
     SendWarning(BATTLEFIELD_WG_TEXT_START_BATTLE);
-}
-
-void BattlefieldWG::UpdateCounterVehicle(bool init)
-{
-    if (init)
-    {
-        SetData(BATTLEFIELD_WG_DATA_VEHICLE_H, 0);
-        SetData(BATTLEFIELD_WG_DATA_VEHICLE_A, 0);
-    }
-    SetData(BATTLEFIELD_WG_DATA_MAX_VEHICLE_H, 0);
-    SetData(BATTLEFIELD_WG_DATA_MAX_VEHICLE_A, 0);
-
-    for (WintergraspWorkshop* workshop : Workshops)
-    {
-        if (workshop->GetTeamControl() == TEAM_ALLIANCE)
-            UpdateData(BATTLEFIELD_WG_DATA_MAX_VEHICLE_A, 4);
-        else if (workshop->GetTeamControl() == TEAM_HORDE)
-            UpdateData(BATTLEFIELD_WG_DATA_MAX_VEHICLE_H, 4);
-    }
-
-    UpdateVehicleCountWG();
 }
 
 void BattlefieldWG::OnBattleEnd(bool endByTimer)
@@ -713,13 +689,6 @@ void BattlefieldWG::OnBattleEnd(bool endByTimer)
                 RemoveAurasFromPlayer(player);
 
         m_PlayersInWar[team].clear();
-
-        for (auto itr = m_vehicles[team].begin(); itr != m_vehicles[team].end(); ++itr)
-            if (Creature* creature = GetCreature(*itr))
-                if (creature->IsVehicle())
-                    creature->DespawnOrUnsummon();
-
-        m_vehicles[team].clear();
     }
 
     if (!endByTimer)
@@ -835,36 +804,7 @@ void BattlefieldWG::OnCreatureCreate(Creature* creature)
                 Player* creator = ObjectAccessor::FindPlayer(creature->ToTempSummon()->GetSummonerGUID());
                 TeamId team = creator->GetTeamId();
 
-                if (team == TEAM_HORDE)
-                {
-                    if (GetData(BATTLEFIELD_WG_DATA_VEHICLE_H) < GetData(BATTLEFIELD_WG_DATA_MAX_VEHICLE_H))
-                    {
-                        UpdateData(BATTLEFIELD_WG_DATA_VEHICLE_H, 1);
-                        creature->AddAura(SPELL_HORDE_FLAG, creature);
-                        m_vehicles[team].insert(creature->GetGUID());
-                        UpdateVehicleCountWG();
-                    }
-                    else
-                    {
-                        creature->DespawnOrUnsummon();
-                        return;
-                    }
-                }
-                else
-                {
-                    if (GetData(BATTLEFIELD_WG_DATA_VEHICLE_A) < GetData(BATTLEFIELD_WG_DATA_MAX_VEHICLE_A))
-                    {
-                        UpdateData(BATTLEFIELD_WG_DATA_VEHICLE_A, 1);
-                        creature->AddAura(SPELL_ALLIANCE_FLAG, creature);
-                        m_vehicles[team].insert(creature->GetGUID());
-                        UpdateVehicleCountWG();
-                    }
-                    else
-                    {
-                        creature->DespawnOrUnsummon();
-                        return;
-                    }
-                }
+                creature->DespawnOrUnsummon();
 
                 creature->CastSpell(creator, SPELL_GRAB_PASSENGER, true);
                 break;
@@ -959,34 +899,6 @@ void BattlefieldWG::HandleKill(Player* killer, Unit* victim)
     /// @todoRecent PvP activity worldstate
 }
 
-bool BattlefieldWG::FindAndRemoveVehicleFromList(Unit* vehicle)
-{
-    for (uint32 team = 0; team < BG_TEAMS_COUNT; ++team)
-    {
-        auto itr = m_vehicles[team].find(vehicle->GetGUID());
-        if (itr != m_vehicles[team].end())
-        {
-            m_vehicles[team].erase(itr);
-
-            if (team == TEAM_HORDE)
-                UpdateData(BATTLEFIELD_WG_DATA_VEHICLE_H, -1);
-            else
-                UpdateData(BATTLEFIELD_WG_DATA_VEHICLE_A, -1);
-            return true;
-        }
-    }
-
-    return false;
-}
-
-void BattlefieldWG::OnUnitDeath(Unit* unit)
-{
-    if (IsWarTime())
-        if (unit->IsVehicle())
-            if (FindAndRemoveVehicleFromList(unit))
-                UpdateVehicleCountWG();
-}
-
 void BattlefieldWG::HandlePromotion(Player* playerKiller, Unit* unitKilled)
 {
     uint32 teamId = playerKiller->GetTeamId();
@@ -1079,12 +991,7 @@ void BattlefieldWG::OnPlayerLeaveWar(Player* player)
 {
     // Remove all aura from WG /// @todo false we can go out of this zone on retail and keep Rank buff, remove on end of WG
     if (!player->GetSession()->PlayerLogout())
-    {
-        if (Creature* vehicle = player->GetVehicleCreatureBase())   // Remove vehicle of player if he go out.
-            vehicle->DespawnOrUnsummon();
-
         RemoveAurasFromPlayer(player);
-    }
 
     player->RemoveAurasDueToSpell(SPELL_HORDE_CONTROLS_FACTORY_PHASE_SHIFT);
     player->RemoveAurasDueToSpell(SPELL_ALLIANCE_CONTROLS_FACTORY_PHASE_SHIFT);
@@ -1285,15 +1192,6 @@ void BattlefieldWG::UpdateDamagedTowerCount(TeamId team)
         UpdateData(BATTLEFIELD_WG_DATA_DAMAGED_TOWER_DEF, 1);
 }
 
-// Update vehicle count WorldState to player
-void BattlefieldWG::UpdateVehicleCountWG()
-{
-    SendUpdateWorldState(BATTLEFIELD_WG_WORLD_STATE_VEHICLE_H,     GetData(BATTLEFIELD_WG_DATA_VEHICLE_H));
-    SendUpdateWorldState(BATTLEFIELD_WG_WORLD_STATE_MAX_VEHICLE_H, GetData(BATTLEFIELD_WG_DATA_MAX_VEHICLE_H));
-    SendUpdateWorldState(BATTLEFIELD_WG_WORLD_STATE_VEHICLE_A,     GetData(BATTLEFIELD_WG_DATA_VEHICLE_A));
-    SendUpdateWorldState(BATTLEFIELD_WG_WORLD_STATE_MAX_VEHICLE_A, GetData(BATTLEFIELD_WG_DATA_MAX_VEHICLE_A));
-}
-
 void BattlefieldWG::UpdateTenacity()
 {
     uint32 alliancePlayers = m_PlayersInWar[TEAM_ALLIANCE].size();
@@ -1319,10 +1217,6 @@ void BattlefieldWG::UpdateTenacity()
             if (Player* player = ObjectAccessor::FindPlayer(*itr))
                 if (player->getLevel() >= m_MinLevel)
                     player->RemoveAurasDueToSpell(SPELL_TENACITY);
-
-        for (auto itr = m_vehicles[m_tenacityTeam].begin(); itr != m_vehicles[m_tenacityTeam].end(); ++itr)
-            if (Creature* creature = GetCreature(*itr))
-                creature->RemoveAurasDueToSpell(SPELL_TENACITY_VEHICLE);
     }
 
     // Apply new buff
@@ -1347,19 +1241,11 @@ void BattlefieldWG::UpdateTenacity()
             if (Player* player = ObjectAccessor::FindPlayer(*itr))
                 player->SetAuraStack(SPELL_TENACITY, player, newStack);
 
-        for (auto itr = m_vehicles[m_tenacityTeam].begin(); itr != m_vehicles[m_tenacityTeam].end(); ++itr)
-            if (Creature* creature = GetCreature(*itr))
-                creature->SetAuraStack(SPELL_TENACITY_VEHICLE, creature, newStack);
-
         if (buff_honor != 0)
         {
             for (auto itr = m_PlayersInWar[m_tenacityTeam].begin(); itr != m_PlayersInWar[m_tenacityTeam].end(); ++itr)
                 if (Player* player = ObjectAccessor::FindPlayer(*itr))
                     player->CastSpell(player, buff_honor, true);
-
-            for (auto itr = m_vehicles[m_tenacityTeam].begin(); itr != m_vehicles[m_tenacityTeam].end(); ++itr)
-                if (Creature* creature = GetCreature(*itr))
-                    creature->CastSpell(creature, buff_honor, true);
         }
     }
     else
@@ -1807,8 +1693,6 @@ void WintergraspWorkshop::GiveControlTo(TeamId teamId, bool init /*= false*/)
             break;
         }
     }
-    if (!init)
-        _wg->UpdateCounterVehicle(false);
 }
 
 void WintergraspWorkshop::UpdateGraveyardAndWorkshop()

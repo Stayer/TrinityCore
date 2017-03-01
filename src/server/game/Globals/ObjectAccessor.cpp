@@ -28,7 +28,6 @@
 #include "ObjectMgr.h"
 #include "Pet.h"
 #include "Player.h"
-#include "Transport.h"
 #include "World.h"
 
 #include <boost/thread/shared_mutex.hpp>
@@ -79,7 +78,6 @@ HashMapHolder<Player>::MapType const& ObjectAccessor::GetPlayers()
 }
 
 template class TC_GAME_API HashMapHolder<Player>;
-template class TC_GAME_API HashMapHolder<Transport>;
 
 namespace PlayerNameMapHolder
 {
@@ -112,10 +110,7 @@ WorldObject* ObjectAccessor::GetWorldObject(WorldObject const& p, ObjectGuid con
     switch (guid.GetHigh())
     {
         case HighGuid::Player:        return GetPlayer(p, guid);
-        case HighGuid::Transport:
-        case HighGuid::Mo_Transport:
         case HighGuid::GameObject:    return GetGameObject(p, guid);
-        case HighGuid::Vehicle:
         case HighGuid::Unit:          return GetCreature(p, guid);
         case HighGuid::Pet:           return GetPet(p, guid);
         case HighGuid::DynamicObject: return GetDynamicObject(p, guid);
@@ -136,14 +131,11 @@ Object* ObjectAccessor::GetObjectByTypeMask(WorldObject const& p, ObjectGuid con
             if (typemask & TYPEMASK_PLAYER)
                 return GetPlayer(p, guid);
             break;
-        case HighGuid::Transport:
-        case HighGuid::Mo_Transport:
         case HighGuid::GameObject:
             if (typemask & TYPEMASK_GAMEOBJECT)
                 return GetGameObject(p, guid);
             break;
         case HighGuid::Unit:
-        case HighGuid::Vehicle:
             if (typemask & TYPEMASK_UNIT)
                 return GetCreature(p, guid);
             break;
@@ -172,11 +164,6 @@ Corpse* ObjectAccessor::GetCorpse(WorldObject const& u, ObjectGuid const& guid)
 GameObject* ObjectAccessor::GetGameObject(WorldObject const& u, ObjectGuid const& guid)
 {
     return u.GetMap()->GetGameObject(guid);
-}
-
-Transport* ObjectAccessor::GetTransport(WorldObject const& u, ObjectGuid const& guid)
-{
-    return u.GetMap()->GetTransport(guid);
 }
 
 DynamicObject* ObjectAccessor::GetDynamicObject(WorldObject const& u, ObjectGuid const& guid)

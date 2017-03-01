@@ -542,9 +542,6 @@ class TC_GAME_API Map : public GridRefManager<NGridType>
         void RemoveOldCorpses();
 
         static void DeleteRespawnTimesInDB(uint16 mapId, uint32 instanceId);
-
-        void SendInitTransports(Player* player);
-        void SendRemoveTransports(Player* player);
         void SendZoneDynamicInfo(Player* player);
 
         void SetZoneMusic(uint32 zoneId, uint32 musicId);

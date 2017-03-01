@@ -347,9 +347,6 @@ bool Condition::Meets(ConditionSourceInfo& sourceInfo) const
                         case RELATION_OWNED_BY:
                             condMeets = unit->GetOwnerGUID() == toUnit->GetGUID();
                             break;
-                        case RELATION_PASSENGER_OF:
-                            condMeets = unit->IsOnVehicle(toUnit);
-                            break;
                         case RELATION_CREATED_BY:
                             condMeets = unit->GetCreatorGUID() == toUnit->GetGUID();
                             break;

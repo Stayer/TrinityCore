@@ -91,12 +91,9 @@ struct ObjectGuidTraits
 
 GUID_TRAIT_GLOBAL(HighGuid::Player)
 GUID_TRAIT_GLOBAL(HighGuid::Item)
-GUID_TRAIT_GLOBAL(HighGuid::Mo_Transport)
 GUID_TRAIT_GLOBAL(HighGuid::Group)
 GUID_TRAIT_GLOBAL(HighGuid::Instance)
-GUID_TRAIT_MAP_SPECIFIC(HighGuid::Transport)
 GUID_TRAIT_MAP_SPECIFIC(HighGuid::Unit)
-GUID_TRAIT_MAP_SPECIFIC(HighGuid::Vehicle)
 GUID_TRAIT_MAP_SPECIFIC(HighGuid::Pet)
 GUID_TRAIT_MAP_SPECIFIC(HighGuid::GameObject)
 GUID_TRAIT_MAP_SPECIFIC(HighGuid::DynamicObject)
@@ -159,19 +156,16 @@ class TC_GAME_API ObjectGuid
         bool IsEmpty()             const { return _guid == 0; }
         bool IsCreature()          const { return GetHigh() == HighGuid::Unit; }
         bool IsPet()               const { return GetHigh() == HighGuid::Pet; }
-        bool IsVehicle()           const { return GetHigh() == HighGuid::Vehicle; }
         bool IsCreatureOrPet()     const { return IsCreature() || IsPet(); }
-        bool IsCreatureOrVehicle() const { return IsCreature() || IsVehicle(); }
-        bool IsAnyTypeCreature()   const { return IsCreature() || IsPet() || IsVehicle(); }
+		bool IsCreatureOrVehicle() const { return IsCreature(); }
+		bool IsAnyTypeCreature()   const { return IsCreature() || IsPet(); }
         bool IsPlayer()            const { return !IsEmpty() && GetHigh() == HighGuid::Player; }
         bool IsUnit()              const { return IsAnyTypeCreature() || IsPlayer(); }
         bool IsItem()              const { return GetHigh() == HighGuid::Item; }
         bool IsGameObject()        const { return GetHigh() == HighGuid::GameObject; }
         bool IsDynamicObject()     const { return GetHigh() == HighGuid::DynamicObject; }
         bool IsCorpse()            const { return GetHigh() == HighGuid::Corpse; }
-        bool IsTransport()         const { return GetHigh() == HighGuid::Transport; }
-        bool IsMOTransport()       const { return GetHigh() == HighGuid::Mo_Transport; }
-        bool IsAnyTypeGameObject() const { return IsGameObject() || IsTransport() || IsMOTransport(); }
+		bool IsAnyTypeGameObject() const { return IsGameObject();  }
         bool IsInstance()          const { return GetHigh() == HighGuid::Instance; }
         bool IsGroup()             const { return GetHigh() == HighGuid::Group; }
 
@@ -187,8 +181,6 @@ class TC_GAME_API ObjectGuid
                 case HighGuid::GameObject:   return TYPEID_GAMEOBJECT;
                 case HighGuid::DynamicObject: return TYPEID_DYNAMICOBJECT;
                 case HighGuid::Corpse:       return TYPEID_CORPSE;
-                case HighGuid::Mo_Transport: return TYPEID_GAMEOBJECT;
-                case HighGuid::Vehicle:      return TYPEID_UNIT;
                 // unknown
                 case HighGuid::Instance:
                 case HighGuid::Group:
@@ -216,15 +208,12 @@ class TC_GAME_API ObjectGuid
                 case HighGuid::Player:
                 case HighGuid::DynamicObject:
                 case HighGuid::Corpse:
-                case HighGuid::Mo_Transport:
                 case HighGuid::Instance:
                 case HighGuid::Group:
                     return false;
                 case HighGuid::GameObject:
-                case HighGuid::Transport:
                 case HighGuid::Unit:
                 case HighGuid::Pet:
-                case HighGuid::Vehicle:
                 default:
                     return true;
             }

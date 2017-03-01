@@ -360,22 +360,16 @@ class TC_GAME_API BattlefieldWG : public Battlefield
         /// Define if player can interact with the relic
         void SetRelicInteractible(bool allow) { m_isRelicInteractible = allow; }
 
-        void UpdateVehicleCountWG();
-        void UpdateCounterVehicle(bool init);
-
         void SendInitWorldStatesTo(Player* player);
         void SendInitWorldStatesToAll() override;
         void FillInitialWorldStates(WorldPacket& data) override;
 
         void HandleKill(Player* killer, Unit* victim) override;
-        void OnUnitDeath(Unit* unit) override;
         void HandlePromotion(Player* killer, Unit* killed);
         void PromotePlayer(Player* killer);
 
         void UpdateTenacity();
         void ProcessEvent(WorldObject* obj, uint32 eventId) override;
-
-        bool FindAndRemoveVehicleFromList(Unit* vehicle);
 
         // returns the graveyardId in the specified area.
         uint8 GetSpiritGraveyardId(uint32 areaId) const;
@@ -390,7 +384,6 @@ class TC_GAME_API BattlefieldWG : public Battlefield
         GuidVector DefenderPortalList[BG_TEAMS_COUNT];
         GameObjectBuildingVect BuildingsInZone;
 
-        GuidUnorderedSet m_vehicles[BG_TEAMS_COUNT];
         GuidVector CanonList;
 
         TeamId m_tenacityTeam;

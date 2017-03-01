@@ -42,7 +42,6 @@
 #include "Battleground.h"
 #include "Util.h"
 #include "TemporarySummon.h"
-#include "Vehicle.h"
 #include "SpellAuraEffects.h"
 #include "ScriptMgr.h"
 #include "ConditionMgr.h"
@@ -1438,20 +1437,6 @@ void Spell::SelectImplicitCasterObjectTargets(SpellEffIndex effIndex, SpellImpli
             if (m_caster->IsSummon())
                 target = m_caster->ToTempSummon()->GetSummoner();
             break;
-        case TARGET_UNIT_VEHICLE:
-            target = m_caster->GetVehicleBase();
-            break;
-        case TARGET_UNIT_PASSENGER_0:
-        case TARGET_UNIT_PASSENGER_1:
-        case TARGET_UNIT_PASSENGER_2:
-        case TARGET_UNIT_PASSENGER_3:
-        case TARGET_UNIT_PASSENGER_4:
-        case TARGET_UNIT_PASSENGER_5:
-        case TARGET_UNIT_PASSENGER_6:
-        case TARGET_UNIT_PASSENGER_7:
-            if (m_caster->GetTypeId() == TYPEID_UNIT && m_caster->IsVehicle())
-                target = m_caster->GetVehicleKit()->GetPassenger(targetType.GetTarget() - TARGET_UNIT_PASSENGER_0);
-            break;
         default:
             break;
     }
@@ -1564,9 +1549,6 @@ void Spell::SelectImplicitTrajTargets(SpellEffIndex effIndex, SpellImplicitTarge
 
         if (Unit* unit = (*itr)->ToUnit())
         {
-            if (m_caster == *itr || m_caster->IsOnVehicle(unit) || unit->GetVehicle())
-                continue;
-
             if (Creature* creatureTarget = unit->ToCreature())
             {
                 if (!(creatureTarget->GetCreatureTemplate()->type_flags & CREATURE_TYPE_FLAG_CAN_COLLIDE_WITH_MISSILES))
@@ -4891,14 +4873,6 @@ SpellCastResult Spell::CheckCast(bool strict, uint32* param1 /*= nullptr*/, uint
         if ((!m_caster->HasUnitMovementFlag(MOVEMENTFLAG_FALLING_FAR) || m_spellInfo->Effects[0].Effect != SPELL_EFFECT_STUCK) &&
             (IsAutoRepeat() || (m_spellInfo->AuraInterruptFlags & AURA_INTERRUPT_FLAG_NOT_SEATED) != 0))
             return SPELL_FAILED_MOVING;
-    }
-
-    // Check vehicle flags
-    if (!(_triggeredCastFlags & TRIGGERED_IGNORE_CASTER_MOUNTED_OR_ON_VEHICLE))
-    {
-        SpellCastResult vehicleCheck = m_spellInfo->CheckVehicle(m_caster);
-        if (vehicleCheck != SPELL_CAST_OK)
-            return vehicleCheck;
     }
 
     // check spell cast conditions from database

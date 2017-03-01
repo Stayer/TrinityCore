@@ -24,7 +24,6 @@
 #include "GridNotifiers.h"
 #include "GridNotifiersImpl.h"
 #include "ScriptMgr.h"
-#include "Transport.h"
 
 DynamicObject::DynamicObject(bool isWorldObject) : WorldObject(isWorldObject),
     _aura(NULL), _removedAura(NULL), _caster(NULL), _duration(0), _isViewpoint(false)
@@ -107,27 +106,6 @@ bool DynamicObject::CreateDynamicObject(ObjectGuid::LowType guidlow, Unit* caste
 
     if (IsWorldObject())
         setActive(true);    //must before add to map to be put in world container
-
-    Transport* transport = caster->GetTransport();
-    if (transport)
-    {
-        float x, y, z, o;
-        pos.GetPosition(x, y, z, o);
-        transport->CalculatePassengerOffset(x, y, z, &o);
-        m_movementInfo.transport.pos.Relocate(x, y, z, o);
-
-        // This object must be added to transport before adding to map for the client to properly display it
-        transport->AddPassenger(this);
-    }
-
-    if (!GetMap()->AddToMap(this))
-    {
-        // Returning false will cause the object to be deleted - remove from transport
-        if (transport)
-            transport->RemovePassenger(this);
-        return false;
-    }
-
     return true;
 }
 

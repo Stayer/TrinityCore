@@ -62,7 +62,6 @@
 #include "SmartAI.h"
 #include "Metric.h"
 #include "TicketMgr.h"
-#include "TransportMgr.h"
 #include "Unit.h"
 #include "VMapFactory.h"
 #include "WardenCheckMgr.h"
@@ -1509,9 +1508,6 @@ void World::SetInitialWorldSettings()
     TC_LOG_INFO("server.loading", "Loading Game Object template addons...");
     sObjectMgr->LoadGameObjectTemplateAddons();
 
-    TC_LOG_INFO("server.loading", "Loading Transport templates...");
-    sTransportMgr->LoadTransportTemplates();
-
     TC_LOG_INFO("server.loading", "Loading Spell Rank Data...");
     sSpellMgr->LoadSpellRanks();
 
@@ -1640,12 +1636,6 @@ void World::SetInitialWorldSettings()
 
     TC_LOG_INFO("server.loading", "Loading UNIT_NPC_FLAG_SPELLCLICK Data..."); // must be after LoadQuests
     sObjectMgr->LoadNPCSpellClickSpells();
-
-    TC_LOG_INFO("server.loading", "Loading Vehicle Template Accessories...");
-    sObjectMgr->LoadVehicleTemplateAccessories();                // must be after LoadCreatureTemplates() and LoadNPCSpellClickSpells()
-
-    TC_LOG_INFO("server.loading", "Loading Vehicle Accessories...");
-    sObjectMgr->LoadVehicleAccessories();                       // must be after LoadCreatureTemplates() and LoadNPCSpellClickSpells()
 
     TC_LOG_INFO("server.loading", "Loading SpellArea Data...");                // must be after quest load
     sSpellMgr->LoadSpellAreas();
@@ -1933,9 +1923,6 @@ void World::SetInitialWorldSettings()
     ///- Initialize Battlefield
     TC_LOG_INFO("server.loading", "Starting Battlefield System");
     sBattlefieldMgr->InitBattlefield();
-
-    TC_LOG_INFO("server.loading", "Loading Transports...");
-    sTransportMgr->SpawnContinentTransports();
 
     ///- Initialize Warden
     TC_LOG_INFO("server.loading", "Loading Warden Checks...");

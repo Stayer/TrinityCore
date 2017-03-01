@@ -47,9 +47,7 @@ namespace FactorySelector
         // select by NPC flags
         if (!ai_factory)
         {
-            if (creature->IsVehicle())
-                ai_factory = sCreatureAIRegistry->GetRegistryItem("VehicleAI");
-            else if (creature->HasUnitTypeMask(UNIT_MASK_CONTROLABLE_GUARDIAN) && ((Guardian*)creature)->GetOwner()->GetTypeId() == TYPEID_PLAYER)
+            if (creature->HasUnitTypeMask(UNIT_MASK_CONTROLABLE_GUARDIAN) && ((Guardian*)creature)->GetOwner()->GetTypeId() == TYPEID_PLAYER)
                 ai_factory = sCreatureAIRegistry->GetRegistryItem("PetAI");
             else if (creature->HasFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_SPELLCLICK))
                 ai_factory = sCreatureAIRegistry->GetRegistryItem("NullCreatureAI");

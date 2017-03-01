@@ -25,13 +25,11 @@
 #include "World.h"
 #include "Creature.h"
 #include "Player.h"
-#include "Vehicle.h"
 #include "ObjectMgr.h"
 #include "UpdateData.h"
 #include "UpdateMask.h"
 #include "Util.h"
 #include "ObjectAccessor.h"
-#include "Transport.h"
 #include "VMapFactory.h"
 #include "CellImpl.h"
 #include "GridNotifiers.h"
@@ -353,11 +351,7 @@ void Object::BuildMovementUpdate(ByteBuffer* data, uint16 flags) const
         {
             ASSERT(object);
             Transport* transport = object->GetTransport();
-
-            if (transport)
-                *data << transport->GetPackGUID();
-            else
-                *data << uint8(0);
+            *data << uint8(0);
 
             *data << object->GetPositionX();
             *data << object->GetPositionY();
@@ -462,20 +456,6 @@ void Object::BuildMovementUpdate(ByteBuffer* data, uint16 flags) const
             *data << uint32(go->GetGOValue()->Transport.PathProgress);
         else
             *data << uint32(getMSTime());
-    }
-
-    // 0x80
-    if (flags & UPDATEFLAG_VEHICLE)
-    {
-        /// @todo Allow players to aquire this updateflag.
-        ASSERT(unit);
-        ASSERT(unit->GetVehicleKit());
-        ASSERT(unit->GetVehicleKit()->GetVehicleInfo());
-        *data << uint32(unit->GetVehicleKit()->GetVehicleInfo()->m_ID);
-        if (unit->HasUnitMovementFlag(MOVEMENTFLAG_ONTRANSPORT))
-            *data << float(unit->GetTransOffsetO());
-        else
-            *data << float(unit->GetOrientation());
     }
 
     // 0x200
@@ -1069,9 +1049,6 @@ void WorldObject::CleanupsBeforeDelete(bool /*finalCleanup*/)
 {
     if (IsInWorld())
         RemoveFromWorld();
-
-    if (Transport* transport = GetTransport())
-        transport->RemovePassenger(this);
 }
 
 void WorldObject::_Create(ObjectGuid::LowType guidlow, HighGuid guidhigh, uint32 phaseMask)
@@ -1123,19 +1100,6 @@ bool WorldObject::_IsWithinDist(WorldObject const* obj, float dist2compare, bool
 {
     float sizefactor = GetObjectSize() + obj->GetObjectSize();
     float maxdist = dist2compare + sizefactor;
-
-    if (GetTransport() && obj->GetTransport() && obj->GetTransport()->GetGUID().GetCounter() == GetTransport()->GetGUID().GetCounter())
-    {
-        float dtx = m_movementInfo.transport.pos.m_positionX - obj->m_movementInfo.transport.pos.m_positionX;
-        float dty = m_movementInfo.transport.pos.m_positionY - obj->m_movementInfo.transport.pos.m_positionY;
-        float disttsq = dtx * dtx + dty * dty;
-        if (is3D)
-        {
-            float dtz = m_movementInfo.transport.pos.m_positionZ - obj->m_movementInfo.transport.pos.m_positionZ;
-            disttsq += dtz * dtz;
-        }
-        return disttsq < (maxdist * maxdist);
-    }
 
     float dx = GetPositionX() - obj->GetPositionX();
     float dy = GetPositionY() - obj->GetPositionY();
@@ -1572,14 +1536,6 @@ bool WorldObject::CanSeeOrDetect(WorldObject const* obj, bool ignoreStealth, boo
                         if (corpse->IsWithinDist(obj, GetSightRange(obj), false))
                             corpseVisibility = true;
                 }
-            }
-
-            if (Unit const* target = obj->ToUnit())
-            {
-                // Don't allow to detect vehicle accessories if you can't see vehicle
-                if (Unit const* vehicle = target->GetVehicleBase())
-                    if (!thisPlayer->HaveAtClient(vehicle))
-                        return false;
             }
         }
 
@@ -2550,8 +2506,6 @@ void WorldObject::RemoveFromObjectUpdate()
 
 ObjectGuid WorldObject::GetTransGUID() const
 {
-    if (GetTransport())
-        return GetTransport()->GetGUID();
     return ObjectGuid::Empty;
 }
 

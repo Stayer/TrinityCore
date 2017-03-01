@@ -580,9 +580,6 @@ class TC_GAME_API WorldSession
         void HandleMovementOpcodes(WorldPacket& recvPacket);
         void HandleSetActiveMoverOpcode(WorldPacket& recvData);
         void HandleMoveNotActiveMover(WorldPacket& recvData);
-        void HandleDismissControlledVehicle(WorldPacket& recvData);
-        void HandleRequestVehicleExit(WorldPacket& recvData);
-        void HandleChangeSeatsOnControlledVehicle(WorldPacket& recvData);
         void HandleMoveTimeSkippedOpcode(WorldPacket& recvData);
 
         void HandleRequestRaidInfoOpcode(WorldPacket& recvData);
@@ -971,8 +968,6 @@ class TC_GAME_API WorldSession
         void HandleReadyForAccountDataTimes(WorldPacket& recvData);
         void HandleQueryQuestsCompleted(WorldPacket& recvData);
         void HandleQuestPOIQuery(WorldPacket& recvData);
-        void HandleEjectPassenger(WorldPacket& data);
-        void HandleEnterPlayerVehicle(WorldPacket& data);
         void HandleUpdateProjectilePosition(WorldPacket& recvPacket);
         void HandleUpdateMissileTrajectory(WorldPacket& recvPacket);
 

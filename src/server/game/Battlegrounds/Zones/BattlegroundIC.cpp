@@ -23,8 +23,6 @@
 #include "WorldPacket.h"
 #include "GameObject.h"
 #include "ObjectMgr.h"
-#include "Vehicle.h"
-#include "Transport.h"
 #include "ScriptedCreature.h"
 
 BattlegroundIC::BattlegroundIC()
@@ -350,18 +348,6 @@ bool BattlegroundIC::SetupBattleground()
         return false;
     }
 
-    gunshipHorde = sTransportMgr->CreateTransport(GO_HORDE_GUNSHIP, 0, GetBgMap());
-    gunshipAlliance = sTransportMgr->CreateTransport(GO_ALLIANCE_GUNSHIP, 0, GetBgMap());
-
-    if (!gunshipAlliance || !gunshipHorde)
-    {
-        TC_LOG_ERROR("bg.battleground", "Isle of Conquest: There was an error creating gunships!");
-        return false;
-    }
-
-    gunshipHorde->EnableMovement(false);
-    gunshipAlliance->EnableMovement(false);
-
     // setting correct factions for Keep Cannons
     for (uint8 i = BG_IC_NPC_KEEP_CANNON_1; i <= BG_IC_NPC_KEEP_CANNON_12; ++i)
         GetBGCreature(i)->setFaction(BG_IC_Factions[0]);
@@ -391,11 +377,6 @@ void BattlegroundIC::HandleKillUnit(Creature* unit, Player* killer)
         RewardHonorToTeam(WINNER_HONOR_AMOUNT, ALLIANCE);
         EndBattleground(ALLIANCE);
     }
-
-    //Achievement Mowed Down
-    // TO-DO: This should be done on the script of each vehicle of the BG.
-    if (unit->IsVehicle())
-        killer->CastSpell(killer, SPELL_DESTROYED_VEHICLE_ACHIEVEMENT, true);
 }
 
 void BattlegroundIC::HandleKillPlayer(Player* player, Player* killer)
@@ -549,8 +530,6 @@ void BattlegroundIC::HandleContestedNodes(ICNodePoint* node)
 {
     if (node->nodeType == NODE_TYPE_HANGAR)
     {
-        if (gunshipAlliance && gunshipHorde)
-            (node->faction == TEAM_ALLIANCE ? gunshipHorde : gunshipAlliance)->EnableMovement(false);
 
         for (uint8 u = BG_IC_GO_HANGAR_TELEPORTER_1; u <= BG_IC_GO_HANGAR_TELEPORTER_3; ++u)
             DelObject(u);
@@ -567,14 +546,9 @@ void BattlegroundIC::HandleContestedNodes(ICNodePoint* node)
         }
 
         std::list<Creature*> cannons;
-        if (node->faction == TEAM_HORDE)
-            gunshipAlliance->GetCreatureListWithEntryInGrid(cannons, NPC_ALLIANCE_GUNSHIP_CANNON, 150.0f);
-        else
-            gunshipHorde->GetCreatureListWithEntryInGrid(cannons, NPC_HORDE_GUNSHIP_CANNON, 150.0f);
 
         for (Creature* cannon : cannons)
         {
-            cannon->GetVehicleKit()->RemoveAllPassengers();
             cannon->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
         }
     }
@@ -595,56 +569,6 @@ void BattlegroundIC::HandleCapturedNodes(ICNodePoint* node, bool recapture)
 
     switch (node->gameobject_type)
     {
-        case BG_IC_GO_HANGAR_BANNER:
-            {
-                if (!gunshipAlliance || !gunshipHorde)
-                    break;
-
-                std::list<Creature*> cannons;
-                if (node->faction == TEAM_ALLIANCE)
-                    gunshipAlliance->GetCreatureListWithEntryInGrid(cannons, NPC_ALLIANCE_GUNSHIP_CANNON, 150.0f);
-                else
-                    gunshipHorde->GetCreatureListWithEntryInGrid(cannons, NPC_HORDE_GUNSHIP_CANNON, 150.0f);
-
-                for (Creature* cannon : cannons)
-                    cannon->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
-
-                for (uint8 u = 0; u < MAX_HANGAR_TELEPORTERS_SPAWNS; ++u)
-                {
-                    uint8 type = BG_IC_GO_HANGAR_TELEPORTER_1 + u;
-                    if (!AddObject(type, (node->faction == TEAM_ALLIANCE ? GO_ALLIANCE_GUNSHIP_PORTAL : GO_HORDE_GUNSHIP_PORTAL), BG_IC_HangarTeleporters[u], 0, 0, 0, 0, RESPAWN_ONE_DAY))
-                        TC_LOG_ERROR("bg.battleground", "Isle of Conquest: There was an error spawning a gunship portal. Type: %u", BG_IC_GO_HANGAR_TELEPORTER_1 + u);
-                }
-
-                for (uint8 u = 0; u < MAX_HANGAR_TELEPORTER_EFFECTS_SPAWNS; ++u)
-                {
-                    uint8 type = BG_IC_GO_HANGAR_TELEPORTER_EFFECT_1 + u;
-                    if (!AddObject(type, (node->faction == TEAM_ALLIANCE ? GO_ALLIANCE_GUNSHIP_PORTAL_EFFECTS : GO_HORDE_GUNSHIP_PORTAL_EFFECTS), BG_IC_HangarTeleporterEffects[u], 0, 0, 0, 0, RESPAWN_ONE_DAY, GO_STATE_ACTIVE))
-                        TC_LOG_ERROR("bg.battleground", "Isle of Conquest: There was an error spawning a gunship portal effects. Type: %u", BG_IC_GO_HANGAR_TELEPORTER_1 + u);
-                }
-
-                for (uint8 u = 0; u < MAX_TRIGGER_SPAWNS_PER_FACTION; ++u)
-                {
-                    if (!AddCreature(NPC_WORLD_TRIGGER_NOT_FLOATING, BG_IC_NPC_WORLD_TRIGGER_NOT_FLOATING, BG_IC_HangarTrigger[node->faction], node->faction, RESPAWN_ONE_DAY, node->faction == TEAM_ALLIANCE ? gunshipAlliance : gunshipHorde))
-                        TC_LOG_ERROR("bg.battleground", "Isle of Conquest: There was an error spawning a world trigger. Type: %u", BG_IC_NPC_WORLD_TRIGGER_NOT_FLOATING);
-                }
-
-                for (uint8 u = 0; u < MAX_CAPTAIN_SPAWNS_PER_FACTION; ++u)
-                {
-                    uint8 type = BG_IC_NPC_GUNSHIP_CAPTAIN_1 + u;
-
-                    if (type == BG_IC_NPC_GUNSHIP_CAPTAIN_1)
-                        if (AddCreature(node->faction == TEAM_ALLIANCE ? NPC_ALLIANCE_GUNSHIP_CAPTAIN : NPC_HORDE_GUNSHIP_CAPTAIN, type, BG_IC_HangarCaptains[node->faction == TEAM_ALLIANCE ? 2 : 0], node->faction, RESPAWN_ONE_DAY))
-                            GetBGCreature(BG_IC_NPC_GUNSHIP_CAPTAIN_1)->GetAI()->DoAction(ACTION_GUNSHIP_READY);
-
-                    if (type == BG_IC_NPC_GUNSHIP_CAPTAIN_2)
-                        if (!AddCreature(node->faction == TEAM_ALLIANCE ? NPC_ALLIANCE_GUNSHIP_CAPTAIN : NPC_HORDE_GUNSHIP_CAPTAIN, type, BG_IC_HangarCaptains[node->faction == TEAM_ALLIANCE ? 3 : 1], node->faction, RESPAWN_ONE_DAY, node->faction == TEAM_ALLIANCE ? gunshipAlliance : gunshipHorde))
-                            TC_LOG_ERROR("bg.battleground", "Isle of Conquest: There was an error spawning a world trigger. Type: %u", BG_IC_NPC_GUNSHIP_CAPTAIN_2);
-                }
-
-                (node->faction == TEAM_ALLIANCE ? gunshipAlliance : gunshipHorde)->EnableMovement(true);
-                break;
-            }
         case BG_IC_GO_QUARRY_BANNER:
             RemoveAuraOnTeam(SPELL_QUARRY, (node->faction == TEAM_ALLIANCE ? HORDE : ALLIANCE));
             CastSpellOnTeam(SPELL_QUARRY, (node->faction == TEAM_ALLIANCE ? ALLIANCE : HORDE));
@@ -659,31 +583,6 @@ void BattlegroundIC::HandleCapturedNodes(ICNodePoint* node, bool recapture)
 
             if (docksTimer < DOCKS_UPDATE_TIME)
                 docksTimer = DOCKS_UPDATE_TIME;
-
-            // we must del opposing faction vehicles when the node is captured (unused ones)
-            for (uint8 i = (node->faction == TEAM_ALLIANCE ? BG_IC_NPC_GLAIVE_THROWER_1_H : BG_IC_NPC_GLAIVE_THROWER_1_A); i < (node->faction == TEAM_ALLIANCE ? BG_IC_NPC_GLAIVE_THROWER_2_H : BG_IC_NPC_GLAIVE_THROWER_2_A); ++i)
-            {
-                if (Creature* glaiveThrower = GetBGCreature(i, false))
-                {
-                    if (Vehicle* vehicleGlaive = glaiveThrower->GetVehicleKit())
-                    {
-                        if (!vehicleGlaive->GetPassenger(0))
-                            DelCreature(i);
-                    }
-                }
-            }
-
-            for (uint8 i = (node->faction == TEAM_ALLIANCE ? BG_IC_NPC_CATAPULT_1_H : BG_IC_NPC_CATAPULT_1_A); i < (node->faction == TEAM_ALLIANCE ? BG_IC_NPC_CATAPULT_4_H  : BG_IC_NPC_CATAPULT_4_A); ++i)
-            {
-                if (Creature* catapult = GetBGCreature(i, false))
-                {
-                    if (Vehicle* vehicleGlaive = catapult->GetVehicleKit())
-                    {
-                        if (!vehicleGlaive->GetPassenger(0))
-                            DelCreature(i);
-                    }
-                }
-            }
 
             // spawning glaive throwers
             for (uint8 i = 0; i < MAX_GLAIVE_THROWERS_SPAWNS_PER_FACTION; ++i)
@@ -716,19 +615,6 @@ void BattlegroundIC::HandleCapturedNodes(ICNodePoint* node, bool recapture)
 
                 if (!recapture)
                 {
-                    // we must del opposing faction vehicles when the node is captured (unused ones)
-                    for (uint8 i = (node->faction == TEAM_ALLIANCE ? BG_IC_NPC_DEMOLISHER_1_H : BG_IC_NPC_DEMOLISHER_1_A); i < (node->faction == TEAM_ALLIANCE ? BG_IC_NPC_DEMOLISHER_4_H : BG_IC_NPC_DEMOLISHER_4_A); ++i)
-                    {
-                        if (Creature* demolisher = GetBGCreature(i, false))
-                        {
-                            if (Vehicle* vehicleDemolisher = demolisher->GetVehicleKit())
-                            {
-                                // is IsVehicleInUse working as expected?
-                                if (!vehicleDemolisher->IsVehicleInUse())
-                                    DelCreature(i);
-                            }
-                        }
-                    }
 
                     for (uint8 i = 0; i < MAX_DEMOLISHERS_SPAWNS_PER_FACTION; ++i)
                     {
@@ -743,16 +629,6 @@ void BattlegroundIC::HandleCapturedNodes(ICNodePoint* node, bool recapture)
 
                     // we check if the opossing siege engine is in use
                     int8 enemySiege = (node->faction == TEAM_ALLIANCE ? BG_IC_NPC_SIEGE_ENGINE_H : BG_IC_NPC_SIEGE_ENGINE_A);
-
-                    if (Creature* siegeEngine = GetBGCreature(enemySiege, false))
-                    {
-                        if (Vehicle* vehicleSiege = siegeEngine->GetVehicleKit())
-                        {
-                            // is VehicleInUse working as expected ?
-                            if (!vehicleSiege->IsVehicleInUse())
-                                DelCreature(enemySiege);
-                        }
-                    }
 
                     uint8 siegeType = (node->faction == TEAM_ALLIANCE ? BG_IC_NPC_SIEGE_ENGINE_A : BG_IC_NPC_SIEGE_ENGINE_H);
                     if (!GetBGCreature(siegeType, false) || !GetBGCreature(siegeType)->IsAlive())

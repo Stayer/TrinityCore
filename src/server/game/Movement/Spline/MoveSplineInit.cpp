@@ -20,7 +20,6 @@
 #include "MoveSpline.h"
 #include "MovementPacketBuilder.h"
 #include "Unit.h"
-#include "Transport.h"
 #include "WorldPacket.h"
 #include "Opcodes.h"
 
@@ -59,21 +58,15 @@ namespace Movement
     {
         MoveSpline& move_spline = *unit->movespline;
 
-        // Elevators also use MOVEMENTFLAG_ONTRANSPORT but we do not keep track of their position changes (movementInfo.transport.guid is 0 in that case)
-        bool transport = unit->HasUnitMovementFlag(MOVEMENTFLAG_ONTRANSPORT) && unit->GetTransGUID();
         Location real_position;
         // there is a big chance that current position is unknown if current state is not finalized, need compute it
         // this also allows CalculatePath spline position and update map position in much greater intervals
-        // Don't compute for transport movement if the unit is in a motion between two transports
-        if (!move_spline.Finalized() && move_spline.onTransport == transport)
+        if (!move_spline.Finalized())
             real_position = move_spline.ComputePosition();
         else
         {
             Position const* pos;
-            if (!transport)
-                pos = unit;
-            else
-                pos = &unit->m_movementInfo.transport.pos;
+            pos = unit;
 
             real_position.x = pos->GetPositionX();
             real_position.y = pos->GetPositionY();
@@ -88,7 +81,6 @@ namespace Movement
         // corrent first vertex
         args.path[0] = real_position;
         args.initialOrientation = real_position.orientation;
-        move_spline.onTransport = transport;
 
         uint32 moveFlags = unit->m_movementInfo.GetMovementFlags();
         moveFlags |= (MOVEMENTFLAG_SPLINE_ENABLED|MOVEMENTFLAG_FORWARD);
@@ -117,12 +109,6 @@ namespace Movement
 
         WorldPacket data(SMSG_MONSTER_MOVE, 64);
         data << unit->GetPackGUID();
-        if (transport)
-        {
-            data.SetOpcode(SMSG_MONSTER_MOVE_TRANSPORT);
-            data << unit->GetTransGUID().WriteAsPacked();
-            data << int8(unit->GetTransSeat());
-        }
 
         PacketBuilder::WriteMonsterMove(move_spline, data);
         unit->SendMessageToSet(&data, true);
@@ -138,37 +124,21 @@ namespace Movement
         if (move_spline.Finalized())
             return;
 
-        bool transport = unit->HasUnitMovementFlag(MOVEMENTFLAG_ONTRANSPORT) && unit->GetTransGUID();
-        Location loc;
-        if (move_spline.onTransport == transport)
-            loc = move_spline.ComputePosition();
-        else
-        {
-            Position const* pos;
-            if (!transport)
-                pos = unit;
-            else
-                pos = &unit->m_movementInfo.transport.pos;
+		Location loc;
+        Position const* pos;
+        pos = unit;
 
-            loc.x = pos->GetPositionX();
-            loc.y = pos->GetPositionY();
-            loc.z = pos->GetPositionZ();
-            loc.orientation = unit->GetOrientation();
-        }
+        loc.x = pos->GetPositionX();
+        loc.y = pos->GetPositionY();
+        loc.z = pos->GetPositionZ();
+        loc.orientation = unit->GetOrientation();
 
         args.flags = MoveSplineFlag::Done;
         unit->m_movementInfo.RemoveMovementFlag(MOVEMENTFLAG_FORWARD | MOVEMENTFLAG_SPLINE_ENABLED);
-        move_spline.onTransport = transport;
         move_spline.Initialize(args);
 
         WorldPacket data(SMSG_MONSTER_MOVE, 64);
         data << unit->GetPackGUID();
-        if (transport)
-        {
-            data.SetOpcode(SMSG_MONSTER_MOVE_TRANSPORT);
-            data << unit->GetTransGUID().WriteAsPacked();
-            data << int8(unit->GetTransSeat());
-        }
 
         PacketBuilder::WriteStopMovement(loc, args.splineId, data);
         unit->SendMessageToSet(&data, true);
@@ -192,14 +162,6 @@ namespace Movement
 
     void MoveSplineInit::SetFacing(float angle)
     {
-        if (args.TransformForTransport)
-        {
-            if (Unit* vehicle = unit->GetVehicleBase())
-                angle -= vehicle->GetOrientation();
-            else if (Transport* transport = unit->GetTransport())
-                angle -= transport->GetOrientation();
-        }
-
         args.facing.angle = G3D::wrap(angle, 0.f, (float)G3D::twoPi());
         args.flags.EnableFacingAngle();
     }
@@ -219,16 +181,5 @@ namespace Movement
 
         args.path_Idx_offset = 0;
         args.path.resize(2);
-        TransportPathTransform transform(unit, args.TransformForTransport);
-        args.path[1] = transform(dest);
-    }
-
-    Vector3 TransportPathTransform::operator()(Vector3 input)
-    {
-        if (_transformForTransport)
-            if (TransportBase* transport = _owner->GetDirectTransport())
-                transport->CalculatePassengerOffset(input.x, input.y, input.z);
-
-        return input;
     }
 }

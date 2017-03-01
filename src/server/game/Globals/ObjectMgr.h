@@ -35,7 +35,6 @@
 #include "Map.h"
 #include "ObjectAccessor.h"
 #include "ObjectDefines.h"
-#include "VehicleDefines.h"
 #include "ConditionMgr.h"
 #include "DBCStores.h"
 #include <string>
@@ -885,8 +884,6 @@ class TC_GAME_API ObjectMgr
             return nullptr;
         }
 
-        VehicleAccessoryList const* GetVehicleAccessoryList(Vehicle* veh) const;
-
         DungeonEncounterList const* GetDungeonEncounterList(uint32 mapId, Difficulty difficulty) const
         {
             std::unordered_map<uint32, DungeonEncounterList>::const_iterator itr = _dungeonEncounterStore.find(MAKE_PAIR32(mapId, difficulty));
@@ -993,8 +990,6 @@ class TC_GAME_API ObjectMgr
         void LoadInstanceTemplate();
         void LoadInstanceEncounters();
         void LoadMailLevelRewards();
-        void LoadVehicleTemplateAccessories();
-        void LoadVehicleAccessories();
 
         void LoadGossipText();
 
@@ -1381,9 +1376,6 @@ class TC_GAME_API ObjectMgr
         SpellClickInfoContainer _spellClickInfoStore;
 
         SpellScriptsContainer _spellScriptsStore;
-
-        VehicleAccessoryContainer _vehicleTemplateAccessoryStore;
-        VehicleAccessoryContainer _vehicleAccessoryStore;
 
         LocaleConstant DBCLocaleIndex;
 

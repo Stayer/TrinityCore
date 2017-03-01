@@ -2155,28 +2155,12 @@ class TC_GAME_API Unit : public WorldObject
         friend class VehicleJoinEvent;
         bool IsAIEnabled, NeedChangeAI;
         ObjectGuid LastCharmerGUID;
-        bool CreateVehicleKit(uint32 id, uint32 creatureEntry);
-        void RemoveVehicleKit();
         Vehicle* GetVehicleKit()const { return m_vehicleKit; }
         Vehicle* GetVehicle()   const { return m_vehicle; }
-        void SetVehicle(Vehicle* vehicle) { m_vehicle = vehicle; }
-        bool IsOnVehicle(const Unit* vehicle) const;
-        Unit* GetVehicleBase()  const;
-        Creature* GetVehicleCreatureBase() const;
-        ObjectGuid GetTransGUID()   const override;
-        /// Returns the transport this unit is on directly (if on vehicle and transport, return vehicle)
-        TransportBase* GetDirectTransport() const;
 
         bool m_ControlledByPlayer;
 
         bool HandleSpellClick(Unit* clicker, int8 seatId = -1);
-        void EnterVehicle(Unit* base, int8 seatId = -1);
-        void ExitVehicle(Position const* exitPosition = NULL);
-        void ChangeSeat(int8 seatId, bool next = true);
-
-        // Should only be called by AuraEffect::HandleAuraControlVehicle(AuraApplication const* auraApp, uint8 mode, bool apply) const;
-        void _ExitVehicle(Position const* exitPosition = NULL);
-        void _EnterVehicle(Vehicle* vehicle, int8 seatId, AuraApplication const* aurApp = NULL);
 
         void BuildMovementPacket(ByteBuffer *data) const;
 

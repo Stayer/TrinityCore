@@ -33,7 +33,6 @@
 #include "SpellAuras.h"
 #include "Util.h"
 #include "WorldPacket.h"
-#include "Transport.h"
 
 namespace Trinity
 {
@@ -1482,17 +1481,6 @@ Creature* Battleground::AddCreature(uint32 entry, uint32 type, float x, float y,
     Map* map = FindBgMap();
     if (!map)
         return NULL;
-
-    if (transport)
-    {
-        if (Creature* creature = transport->SummonPassenger(entry, { x, y, z, o }, TEMPSUMMON_MANUAL_DESPAWN))
-        {
-            BgCreatures[type] = creature->GetGUID();
-            return creature;
-        }
-
-        return NULL;
-    }
 
     Creature* creature = new Creature();
 

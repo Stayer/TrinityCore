@@ -34,7 +34,6 @@
 #include "SmartAI.h"
 #include "SmartScript.h"
 #include "SpellMgr.h"
-#include "Vehicle.h"
 #include "GameEventMgr.h"
 
 SmartScript::SmartScript()
@@ -457,12 +456,6 @@ void SmartScript::ProcessAction(SmartScriptHolder& e, Unit* unit, uint32 var0, u
 
             for (ObjectList::const_iterator itr = targets->begin(); itr != targets->end(); ++itr)
             {
-                // Special handling for vehicles
-                if (IsUnit(*itr))
-                    if (Vehicle* vehicle = (*itr)->ToUnit()->GetVehicleKit())
-                        for (SeatMap::iterator it = vehicle->Seats.begin(); it != vehicle->Seats.end(); ++it)
-                            if (Player* player = ObjectAccessor::GetPlayer(*(*itr), it->second.Passenger.Guid))
-                                player->AreaExploredOrEventHappens(e.action.quest.quest);
 
                 if (IsPlayer(*itr))
                 {
@@ -787,12 +780,6 @@ void SmartScript::ProcessAction(SmartScriptHolder& e, Unit* unit, uint32 var0, u
                 TC_LOG_DEBUG("scripts.ai", "SmartScript::ProcessAction: SMART_ACTION_CALL_GROUPEVENTHAPPENS: Player %u, group credit for quest %u",
                     unit->GetGUID().GetCounter(), e.action.quest.quest);
             }
-
-            // Special handling for vehicles
-            if (Vehicle* vehicle = unit->GetVehicleKit())
-                for (SeatMap::iterator it = vehicle->Seats.begin(); it != vehicle->Seats.end(); ++it)
-                    if (Player* player = ObjectAccessor::GetPlayer(*unit, it->second.Passenger.Guid))
-                        player->GroupEventHappens(e.action.quest.quest, GetBaseObject());
             break;
         }
         case SMART_ACTION_COMBAT_STOP:
@@ -932,11 +919,6 @@ void SmartScript::ProcessAction(SmartScriptHolder& e, Unit* unit, uint32 var0, u
                         TC_LOG_DEBUG("scripts.ai", "SmartScript::ProcessAction: SMART_ACTION_CALL_KILLEDMONSTER: Player %u, Killcredit: %u",
                             (*itr)->GetGUID().GetCounter(), e.action.killedMonster.creature);
                     }
-                    else if (IsUnit(*itr)) // Special handling for vehicles
-                        if (Vehicle* vehicle = (*itr)->ToUnit()->GetVehicleKit())
-                            for (SeatMap::iterator seatItr = vehicle->Seats.begin(); seatItr != vehicle->Seats.end(); ++seatItr)
-                                if (Player* player = ObjectAccessor::GetPlayer(*(*itr), seatItr->second.Passenger.Guid))
-                                    player->KilledMonsterCredit(e.action.killedMonster.creature);
                 }
 
                 delete targets;
@@ -1528,10 +1510,6 @@ void SmartScript::ProcessAction(SmartScriptHolder& e, Unit* unit, uint32 var0, u
             if (!target)
             {
                 G3D::Vector3 dest(e.target.x, e.target.y, e.target.z);
-                if (e.action.MoveToPos.transport)
-                    if (TransportBase* trans = me->GetDirectTransport())
-                        trans->CalculatePassengerPosition(dest.x, dest.y, dest.z);
-
                 me->GetMotionMaster()->MovePoint(e.action.MoveToPos.pointId, dest.x, dest.y, dest.z, e.action.MoveToPos.disablePathfinding == 0);
             }
             else
@@ -2600,10 +2578,6 @@ ObjectList* SmartScript::GetTargets(SmartScriptHolder const& e, Unit* invoker /*
         case SMART_TARGET_ACTION_INVOKER:
             if (scriptTrigger)
                 l->push_back(scriptTrigger);
-            break;
-        case SMART_TARGET_ACTION_INVOKER_VEHICLE:
-            if (scriptTrigger && scriptTrigger->GetVehicle() && scriptTrigger->GetVehicle()->GetBase())
-                l->push_back(scriptTrigger->GetVehicle()->GetBase());
             break;
         case SMART_TARGET_INVOKER_PARTY:
             if (scriptTrigger)

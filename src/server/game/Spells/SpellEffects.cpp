@@ -2299,35 +2299,6 @@ void Spell::EffectSummonType(SpellEffIndex effIndex)
         case SUMMON_CATEGORY_PUPPET:
             summon = m_caster->GetMap()->SummonCreature(entry, *destTarget, properties, duration, m_originalCaster, m_spellInfo->Id);
             break;
-        case SUMMON_CATEGORY_VEHICLE:
-            // Summoning spells (usually triggered by npc_spellclick) that spawn a vehicle and that cause the clicker
-            // to cast a ride vehicle spell on the summoned unit.
-            summon = m_originalCaster->GetMap()->SummonCreature(entry, *destTarget, properties, duration, m_caster, m_spellInfo->Id);
-            if (!summon || !summon->IsVehicle())
-                return;
-
-            // The spell that this effect will trigger. It has SPELL_AURA_CONTROL_VEHICLE
-            uint32 spellId = VEHICLE_SPELL_RIDE_HARDCODED;
-            int32 basePoints = m_spellInfo->Effects[effIndex].CalcValue();
-            if (basePoints > MAX_VEHICLE_SEATS)
-            {
-                SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(basePoints);
-                if (spellInfo && spellInfo->HasAura(SPELL_AURA_CONTROL_VEHICLE))
-                    spellId = spellInfo->Id;
-            }
-
-            // if we have small value, it indicates seat position
-            if (basePoints > 0 && basePoints < MAX_VEHICLE_SEATS)
-                m_originalCaster->CastCustomSpell(spellId, SPELLVALUE_BASE_POINT0, basePoints, summon, true);
-            else
-                m_originalCaster->CastSpell(summon, spellId, true);
-
-            uint32 faction = properties->Faction;
-            if (!faction)
-                faction = m_originalCaster->getFaction();
-
-            summon->setFaction(faction);
-            break;
     }
 
     if (summon)
@@ -3856,22 +3827,6 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
                     else
                         unitTarget->CastSpell(unitTarget, 59314, true);
 
-                    return;
-                }
-                case 62482: // Grab Crate
-                {
-                    if (unitTarget)
-                    {
-                        if (Unit* seat = m_caster->GetVehicleBase())
-                        {
-                            if (Unit* parent = seat->GetVehicleBase())
-                            {
-                                /// @todo a hack, range = 11, should after some time cast, otherwise too far
-                                m_caster->CastSpell(parent, 62496, true);
-                                unitTarget->CastSpell(parent, m_spellInfo->Effects[EFFECT_0].CalcValue());
-                            }
-                        }
-                    }
                     return;
                 }
                 case 60123: // Lightwell

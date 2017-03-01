@@ -31,7 +31,6 @@
 #include "SpellMgr.h"
 #include "UpdateFieldFlags.h"
 #include "World.h"
-#include "Transport.h"
 
 GameObject::GameObject() : WorldObject(false), MapObject(),
     m_model(nullptr), m_goValue(), m_AI(nullptr)
@@ -143,10 +142,7 @@ void GameObject::AddToWorld()
         bool toggledState = GetGoType() == GAMEOBJECT_TYPE_CHEST ? getLootState() == GO_READY : (GetGoState() == GO_STATE_READY || IsTransport());
         if (m_model)
         {
-            if (Transport* trans = ToTransport())
-                trans->SetDelayedAddModelToMap();
-            else
-                GetMap()->InsertGameObjectModel(*m_model);
+            GetMap()->InsertGameObjectModel(*m_model);
         }
 
         EnableCollision(toggledState);
@@ -267,14 +263,6 @@ bool GameObject::Create(ObjectGuid::LowType guidlow, uint32 name_id, Map* map, u
             m_goValue.Building.Health = goinfo->building.intactNumHits + goinfo->building.damagedNumHits;
             m_goValue.Building.MaxHealth = m_goValue.Building.Health;
             SetGoAnimProgress(255);
-            break;
-        case GAMEOBJECT_TYPE_TRANSPORT:
-            SetUInt32Value(GAMEOBJECT_LEVEL, goinfo->transport.pause);
-            SetGoState(goinfo->transport.startOpen ? GO_STATE_ACTIVE : GO_STATE_READY);
-            SetGoAnimProgress(animprogress);
-            m_goValue.Transport.PathProgress = 0;
-            m_goValue.Transport.AnimationInfo = sTransportMgr->GetTransportAnimInfo(goinfo->entry);
-            m_goValue.Transport.CurrentSeg = 0;
             break;
         case GAMEOBJECT_TYPE_FISHINGNODE:
             SetGoAnimProgress(0);
@@ -2132,15 +2120,6 @@ void GameObject::SetGoState(GOState state)
     }
 }
 
-uint32 GameObject::GetTransportPeriod() const
-{
-    ASSERT(GetGOInfo()->type == GAMEOBJECT_TYPE_TRANSPORT);
-    if (m_goValue.Transport.AnimationInfo)
-        return m_goValue.Transport.AnimationInfo->TotalTime;
-
-    return 0;
-}
-
 void GameObject::SetDisplayId(uint32 displayid)
 {
     SetUInt32Value(GAMEOBJECT_DISPLAYID, displayid);
@@ -2288,16 +2267,6 @@ void GameObject::BuildValuesUpdate(uint8 updateType, ByteBuffer* data, Player* t
                         if (ActivateToQuest(target))
                             dynFlags |= GO_DYNFLAG_LO_SPARKLE;
                         break;
-                    case GAMEOBJECT_TYPE_TRANSPORT:
-                    case GAMEOBJECT_TYPE_MO_TRANSPORT:
-                    {
-                        if (uint32 transportPeriod = GetTransportPeriod())
-                        {
-                            float timer = float(m_goValue.Transport.PathProgress % transportPeriod);
-                            pathProgress = int16(timer / float(transportPeriod) * 65535.0f);
-                        }
-                        break;
-                    }
                     default:
                         break;
                 }

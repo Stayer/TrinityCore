@@ -35,7 +35,6 @@
 #include "CellImpl.h"
 #include "ScriptMgr.h"
 #include "SpellScript.h"
-#include "Vehicle.h"
 #include "Config.h"
 
 AuraApplication::AuraApplication(Unit* target, Unit* caster, Aura* aura, uint8 effMask):
@@ -1808,21 +1807,6 @@ bool Aura::CanStackWith(Aura const* existingAura) const
                     break;
             }
         }
-    }
-
-    if (HasEffectType(SPELL_AURA_CONTROL_VEHICLE) && existingAura->HasEffectType(SPELL_AURA_CONTROL_VEHICLE))
-    {
-        Vehicle* veh = NULL;
-        if (GetOwner()->ToUnit())
-            veh = GetOwner()->ToUnit()->GetVehicleKit();
-
-        if (!veh)           // We should probably just let it stack. Vehicle system will prevent undefined behaviour later
-            return true;
-
-        if (!veh->GetAvailableSeatCount())
-            return false;   // No empty seat available
-
-        return true; // Empty seat available (skip rest)
     }
 
     // spell of same spell rank chain

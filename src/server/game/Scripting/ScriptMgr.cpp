@@ -24,8 +24,6 @@
 #include "ObjectMgr.h"
 #include "OutdoorPvPMgr.h"
 #include "ScriptSystem.h"
-#include "Transport.h"
-#include "Vehicle.h"
 #include "SmartAI.h"
 #include "SpellInfo.h"
 #include "SpellScript.h"
@@ -1884,110 +1882,12 @@ bool ScriptMgr::OnConditionCheck(Condition const* condition, ConditionSourceInfo
     return tmpscript->OnConditionCheck(condition, sourceInfo);
 }
 
-void ScriptMgr::OnInstall(Vehicle* veh)
-{
-    ASSERT(veh);
-    ASSERT(veh->GetBase()->GetTypeId() == TYPEID_UNIT);
-
-    GET_SCRIPT(VehicleScript, veh->GetBase()->ToCreature()->GetScriptId(), tmpscript);
-    tmpscript->OnInstall(veh);
-}
-
-void ScriptMgr::OnUninstall(Vehicle* veh)
-{
-    ASSERT(veh);
-    ASSERT(veh->GetBase()->GetTypeId() == TYPEID_UNIT);
-
-    GET_SCRIPT(VehicleScript, veh->GetBase()->ToCreature()->GetScriptId(), tmpscript);
-    tmpscript->OnUninstall(veh);
-}
-
-void ScriptMgr::OnReset(Vehicle* veh)
-{
-    ASSERT(veh);
-    ASSERT(veh->GetBase()->GetTypeId() == TYPEID_UNIT);
-
-    GET_SCRIPT(VehicleScript, veh->GetBase()->ToCreature()->GetScriptId(), tmpscript);
-    tmpscript->OnReset(veh);
-}
-
-void ScriptMgr::OnInstallAccessory(Vehicle* veh, Creature* accessory)
-{
-    ASSERT(veh);
-    ASSERT(veh->GetBase()->GetTypeId() == TYPEID_UNIT);
-    ASSERT(accessory);
-
-    GET_SCRIPT(VehicleScript, veh->GetBase()->ToCreature()->GetScriptId(), tmpscript);
-    tmpscript->OnInstallAccessory(veh, accessory);
-}
-
-void ScriptMgr::OnAddPassenger(Vehicle* veh, Unit* passenger, int8 seatId)
-{
-    ASSERT(veh);
-    ASSERT(veh->GetBase()->GetTypeId() == TYPEID_UNIT);
-    ASSERT(passenger);
-
-    GET_SCRIPT(VehicleScript, veh->GetBase()->ToCreature()->GetScriptId(), tmpscript);
-    tmpscript->OnAddPassenger(veh, passenger, seatId);
-}
-
-void ScriptMgr::OnRemovePassenger(Vehicle* veh, Unit* passenger)
-{
-    ASSERT(veh);
-    ASSERT(veh->GetBase()->GetTypeId() == TYPEID_UNIT);
-    ASSERT(passenger);
-
-    GET_SCRIPT(VehicleScript, veh->GetBase()->ToCreature()->GetScriptId(), tmpscript);
-    tmpscript->OnRemovePassenger(veh, passenger);
-}
-
 void ScriptMgr::OnDynamicObjectUpdate(DynamicObject* dynobj, uint32 diff)
 {
     ASSERT(dynobj);
 
     FOR_SCRIPTS(DynamicObjectScript, itr, end)
         itr->second->OnUpdate(dynobj, diff);
-}
-
-void ScriptMgr::OnAddPassenger(Transport* transport, Player* player)
-{
-    ASSERT(transport);
-    ASSERT(player);
-
-    GET_SCRIPT(TransportScript, transport->GetScriptId(), tmpscript);
-    tmpscript->OnAddPassenger(transport, player);
-}
-
-void ScriptMgr::OnAddCreaturePassenger(Transport* transport, Creature* creature)
-{
-    ASSERT(transport);
-    ASSERT(creature);
-
-    GET_SCRIPT(TransportScript, transport->GetScriptId(), tmpscript);
-    tmpscript->OnAddCreaturePassenger(transport, creature);
-}
-
-void ScriptMgr::OnRemovePassenger(Transport* transport, Player* player)
-{
-    ASSERT(transport);
-    ASSERT(player);
-
-    GET_SCRIPT(TransportScript, transport->GetScriptId(), tmpscript);
-    tmpscript->OnRemovePassenger(transport, player);
-}
-
-void ScriptMgr::OnTransportUpdate(Transport* transport, uint32 diff)
-{
-    ASSERT(transport);
-
-    GET_SCRIPT(TransportScript, transport->GetScriptId(), tmpscript);
-    tmpscript->OnUpdate(transport, diff);
-}
-
-void ScriptMgr::OnRelocate(Transport* transport, uint32 waypointId, uint32 mapId, float x, float y, float z)
-{
-    GET_SCRIPT(TransportScript, transport->GetScriptId(), tmpscript);
-    tmpscript->OnRelocate(transport, waypointId, mapId, x, y, z);
 }
 
 void ScriptMgr::OnStartup()

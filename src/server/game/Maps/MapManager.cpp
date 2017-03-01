@@ -21,7 +21,6 @@
 #include "DatabaseEnv.h"
 #include "Log.h"
 #include "ObjectAccessor.h"
-#include "Transport.h"
 #include "GridDefines.h"
 #include "MapInstanced.h"
 #include "InstanceScript.h"

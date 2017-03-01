@@ -25,7 +25,6 @@
 #include "MoveSplineInit.h"
 #include "MoveSpline.h"
 #include "Player.h"
-#include "VehicleDefines.h"
 
 template<class T, typename D>
 void TargetedMovementGeneratorMedium<T, D>::_setTargetLocation(T* owner, bool updateDestination)
@@ -178,9 +177,6 @@ bool TargetedMovementGeneratorMedium<T, D>::DoUpdate(T* owner, uint32 time_diff)
             allowed_dist = owner->GetCombatReach() + sWorld->getRate(RATE_TARGET_POS_RECALCULATION_RANGE);
 
         G3D::Vector3 dest = owner->movespline->FinalDestination();
-        if (owner->movespline->onTransport)
-            if (TransportBase* transport = owner->GetDirectTransport())
-                transport->CalculatePassengerPosition(dest.x, dest.y, dest.z);
 
         // First check distance
         if (owner->GetTypeId() == TYPEID_UNIT && owner->ToCreature()->CanFly())
