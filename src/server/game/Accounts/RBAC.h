@@ -756,7 +756,13 @@ enum RBACPermissions
     RBAC_PERM_COMMAND_LIST_SCENES                            = 849, // not on 3.3.5a
     RBAC_PERM_COMMAND_RELOAD_SCENE_TEMPLATE                  = 850, // not on 3.3.5a
     RBAC_PERM_COMMAND_RELOAD_AREATRIGGER_TEMPLATE            = 851, // not on 3.3.5a
-    RBAC_PERM_COMMAND_GO_OFFSET                              = 852,
+	RBAC_PERM_COMMAND_ANTICHEAT                              = 852,
+    RBAC_PERM_COMMAND_ANTICHEAT_GLOBAL                       = 853,
+    RBAC_PERM_COMMAND_ANTICHEAT_PLAYER                       = 854,
+    RBAC_PERM_COMMAND_ANTICHEAT_HANDLE                       = 855,
+    RBAC_PERM_COMMAND_ANTICHEAT_JAIL                         = 856,
+    RBAC_PERM_COMMAND_ANTICHEAT_WARN                         = 857,
+    RBAC_PERM_COMMAND_GO_OFFSET                              = 858,
 
     // custom permissions 1000+
     RBAC_PERM_MAX
