@@ -1052,6 +1052,11 @@ bool SmartAIMgr::IsEventValid(SmartScriptHolder& e)
             }
 
             break;
+		case SMART_ACTION_SPAWN_CREATUREGROUP:
+		case SMART_ACTION_DESPAWN_CREATUREGROUP:
+		case SMART_ACTION_SPAWN_GAMEOBJECTGROUP:
+		case SMART_ACTION_DESPAWN_GAMEOBJECTGROUP:
+			break;
         case SMART_ACTION_INSTALL_AI_TEMPLATE:
             if (e.action.installTtemplate.id >= SMARTAI_TEMPLATE_END)
             {
