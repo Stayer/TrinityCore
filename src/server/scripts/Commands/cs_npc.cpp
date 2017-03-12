@@ -25,7 +25,6 @@ EndScriptData */
 #include "ScriptMgr.h"
 #include "ObjectMgr.h"
 #include "Chat.h"
-#include "Transport.h"
 #include "CreatureGroups.h"
 #include "Language.h"
 #include "TargetedMovementGenerator.h"                      // for HandleNpcUnFollowCommand
@@ -254,25 +253,6 @@ public:
         float z = chr->GetPositionZ();
         float o = chr->GetOrientation();
         Map* map = chr->GetMap();
-
-        if (Transport* trans = chr->GetTransport())
-        {
-            ObjectGuid::LowType guid = map->GenerateLowGuid<HighGuid::Unit>();
-            CreatureData& data = sObjectMgr->NewOrExistCreatureData(guid);
-            data.id = id;
-            data.phaseMask = chr->GetPhaseMaskForSpawn();
-            data.posX = chr->GetTransOffsetX();
-            data.posY = chr->GetTransOffsetY();
-            data.posZ = chr->GetTransOffsetZ();
-            data.orientation = chr->GetTransOffsetO();
-
-            Creature* creature = trans->CreateNPCPassenger(guid, &data);
-
-            creature->SaveToDB(trans->GetGOInfo()->moTransport.mapID, 1 << map->GetSpawnMode(), chr->GetPhaseMaskForSpawn());
-
-            sObjectMgr->AddCreatureToGrid(guid, &data);
-            return true;
-        }
 
         Creature* creature = new Creature();
         if (!creature->Create(map->GenerateLowGuid<HighGuid::Unit>(), map, chr->GetPhaseMaskForSpawn(), id, x, y, z, o))

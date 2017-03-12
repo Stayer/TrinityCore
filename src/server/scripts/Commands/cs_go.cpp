@@ -29,7 +29,6 @@ EndScriptData */
 #include "Chat.h"
 #include "Language.h"
 #include "Player.h"
-#include "Transport.h"
 
 class go_commandscript : public CommandScript
 {
@@ -153,11 +152,7 @@ public:
         else
             player->SaveRecallPosition();
 
-        if (player->TeleportTo(mapId, x, y, z, o))
-        {
-            if (transport)
-                transport->AddPassenger(player);
-        }
+		player->TeleportTo(mapId, x, y, z, o);
         return true;
     }
 

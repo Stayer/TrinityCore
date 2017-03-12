@@ -1624,11 +1624,6 @@ class TC_GAME_API SmartAIMgr
 
         bool IsSpellValid(SmartScriptHolder const& e, uint32 entry)
         {
-            if (!sSpellMgr->GetSpellInfo(entry))
-            {
-                TC_LOG_ERROR("sql.sql", "SmartAIMgr: Entry %d SourceType %u Event %u Action %u uses non-existent Spell entry %u, skipped.", e.entryOrGuid, e.GetScriptType(), e.event_id, e.GetActionType(), entry);
-                return false;
-            }
             return true;
         }
 

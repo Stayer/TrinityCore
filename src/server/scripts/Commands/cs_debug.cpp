@@ -31,7 +31,6 @@ EndScriptData */
 #include "GridNotifiers.h"
 #include "GridNotifiersImpl.h"
 #include "GossipDef.h"
-#include "Transport.h"
 #include "Language.h"
 #include "MapManager.h"
 #include "M2Stores.h"
@@ -85,16 +84,13 @@ public:
             { "setaurastate",  rbac::RBAC_PERM_COMMAND_DEBUG_SETAURASTATE,  false, &HandleDebugSetAuraStateCommand,     "" },
             { "setitemvalue",  rbac::RBAC_PERM_COMMAND_DEBUG_SETITEMVALUE,  false, &HandleDebugSetItemValueCommand,     "" },
             { "setvalue",      rbac::RBAC_PERM_COMMAND_DEBUG_SETVALUE,      false, &HandleDebugSetValueCommand,         "" },
-            { "spawnvehicle",  rbac::RBAC_PERM_COMMAND_DEBUG_SPAWNVEHICLE,  false, &HandleDebugSpawnVehicleCommand,     "" },
             { "setvid",        rbac::RBAC_PERM_COMMAND_DEBUG_SETVID,        false, &HandleDebugSetVehicleIdCommand,     "" },
-            { "entervehicle",  rbac::RBAC_PERM_COMMAND_DEBUG_ENTERVEHICLE,  false, &HandleDebugEnterVehicleCommand,     "" },
             { "uws",           rbac::RBAC_PERM_COMMAND_DEBUG_UWS,           false, &HandleDebugUpdateWorldStateCommand, "" },
             { "update",        rbac::RBAC_PERM_COMMAND_DEBUG_UPDATE,        false, &HandleDebugUpdateCommand,           "" },
             { "itemexpire",    rbac::RBAC_PERM_COMMAND_DEBUG_ITEMEXPIRE,    false, &HandleDebugItemExpireCommand,       "" },
             { "areatriggers",  rbac::RBAC_PERM_COMMAND_DEBUG_AREATRIGGERS,  false, &HandleDebugAreaTriggersCommand,     "" },
             { "los",           rbac::RBAC_PERM_COMMAND_DEBUG_LOS,           false, &HandleDebugLoSCommand,              "" },
             { "moveflags",     rbac::RBAC_PERM_COMMAND_DEBUG_MOVEFLAGS,     false, &HandleDebugMoveflagsCommand,        "" },
-            { "transport",     rbac::RBAC_PERM_COMMAND_DEBUG_TRANSPORT,     false, &HandleDebugTransportCommand,        "" },
             { "loadcells",     rbac::RBAC_PERM_COMMAND_DEBUG_LOADCELLS,     false, &HandleDebugLoadCellsCommand,        "" },
             { "boundary",      rbac::RBAC_PERM_COMMAND_DEBUG_BOUNDARY,      false, &HandleDebugBoundaryCommand,         "" },
             { "raidreset",     rbac::RBAC_PERM_COMMAND_INSTANCE_UNBIND,     false, &HandleDebugRaidResetCommand,        "" },
@@ -878,87 +874,6 @@ public:
         return true;
     }
 
-    static bool HandleDebugEnterVehicleCommand(ChatHandler* handler, char const* args)
-    {
-        Unit* target = handler->getSelectedUnit();
-        if (!target || !target->IsVehicle())
-            return false;
-
-        if (!args)
-            return false;
-
-        char* i = strtok((char*)args, " ");
-        if (!i)
-            return false;
-
-        char* j = strtok(NULL, " ");
-
-        uint32 entry = (uint32)atoi(i);
-        int8 seatId = j ? (int8)atoi(j) : -1;
-
-        if (!entry)
-            handler->GetSession()->GetPlayer()->EnterVehicle(target, seatId);
-        else
-        {
-            Creature* passenger = NULL;
-            Trinity::AllCreaturesOfEntryInRange check(handler->GetSession()->GetPlayer(), entry, 20.0f);
-            Trinity::CreatureSearcher<Trinity::AllCreaturesOfEntryInRange> searcher(handler->GetSession()->GetPlayer(), passenger, check);
-            handler->GetSession()->GetPlayer()->VisitNearbyObject(30.0f, searcher);
-            if (!passenger || passenger == target)
-                return false;
-            passenger->EnterVehicle(target, seatId);
-        }
-
-        handler->PSendSysMessage("Unit %u entered vehicle %d", entry, (int32)seatId);
-        return true;
-    }
-
-    static bool HandleDebugSpawnVehicleCommand(ChatHandler* handler, char const* args)
-    {
-        if (!*args)
-            return false;
-
-        char* e = strtok((char*)args, " ");
-        char* i = strtok(NULL, " ");
-
-        if (!e)
-            return false;
-
-        uint32 entry = (uint32)atoi(e);
-
-        float x, y, z, o = handler->GetSession()->GetPlayer()->GetOrientation();
-        handler->GetSession()->GetPlayer()->GetClosePoint(x, y, z, handler->GetSession()->GetPlayer()->GetObjectSize());
-
-        if (!i)
-            return handler->GetSession()->GetPlayer()->SummonCreature(entry, x, y, z, o) != nullptr;
-
-        uint32 id = (uint32)atoi(i);
-
-        CreatureTemplate const* ci = sObjectMgr->GetCreatureTemplate(entry);
-
-        if (!ci)
-            return false;
-
-        VehicleEntry const* ve = sVehicleStore.LookupEntry(id);
-
-        if (!ve)
-            return false;
-
-        Creature* v = new Creature();
-
-        Map* map = handler->GetSession()->GetPlayer()->GetMap();
-
-        if (!v->Create(map->GenerateLowGuid<HighGuid::Vehicle>(), map, handler->GetSession()->GetPlayer()->GetPhaseMask(), entry, x, y, z, o, nullptr, id))
-        {
-            delete v;
-            return false;
-        }
-
-        map->AddToMap(v->ToCreature());
-
-        return true;
-    }
-
     static bool HandleDebugSendLargePacketCommand(ChatHandler* handler, char const* /*args*/)
     {
         const char* stuffingString = "This is a dummy string to push the packet's size beyond 128000 bytes. ";
@@ -1385,32 +1300,6 @@ public:
         TC_LOG_INFO("sql.dev", "(@PATH, XX, %.3f, %.3f, %.5f, 0, 0, 0, 100, 0),", player->GetPositionX(), player->GetPositionY(), player->GetPositionZ());
 
         handler->PSendSysMessage("Waypoint SQL written to SQL Developer log");
-        return true;
-    }
-
-    static bool HandleDebugTransportCommand(ChatHandler* handler, char const* args)
-    {
-        Transport* transport = handler->GetSession()->GetPlayer()->GetTransport();
-        if (!transport)
-            return false;
-
-        bool start = false;
-        if (!stricmp(args, "stop"))
-            transport->EnableMovement(false);
-        else if (!stricmp(args, "start"))
-        {
-            transport->EnableMovement(true);
-            start = true;
-        }
-        else
-        {
-            Position pos = transport->GetPosition();
-            handler->PSendSysMessage("Transport %s is %s", transport->GetName().c_str(), transport->GetGoState() == GO_STATE_READY ? "stopped" : "moving");
-            handler->PSendSysMessage("Transport position: %s", pos.ToString().c_str());
-            return true;
-        }
-
-        handler->PSendSysMessage("Transport %s %s", transport->GetName().c_str(), start ? "started" : "stopped");
         return true;
     }
 
