@@ -428,158 +428,158 @@ void GameObject::Update(uint32 diff)
             }
             // NO BREAK for switch (m_lootState)
         }
-		case GO_READY:
-		{
-			if (m_respawnCompatibilityMode)
-			{
-				if (m_respawnTime > 0)                          // timer on
-				{
-					time_t now = time(NULL);
-					if (m_respawnTime <= now)            // timer expired
-					{
-						ObjectGuid dbtableHighGuid(HighGuid::GameObject, GetEntry(), m_spawnId);
-						time_t linkedRespawntime = GetMap()->GetLinkedRespawnTime(dbtableHighGuid);
-						if (linkedRespawntime)             // Can't respawn, the master is dead
-						{
-							ObjectGuid targetGuid = sObjectMgr->GetLinkedRespawnGuid(dbtableHighGuid);
-							if (targetGuid == dbtableHighGuid) // if linking self, never respawn (check delayed to next day)
-								SetRespawnTime(DAY);
-							else
-								m_respawnTime = (now > linkedRespawntime ? now : linkedRespawntime) + urand(5, MINUTE); // else copy time from master and add a little
-							SaveRespawnTime(); // also save to DB immediately
-							return;
-						}
+        case GO_READY:
+        {
+            if (m_respawnCompatibilityMode)
+            {
+                if (m_respawnTime > 0)                          // timer on
+                {
+                    time_t now = time(NULL);
+                    if (m_respawnTime <= now)            // timer expired
+                    {
+                        ObjectGuid dbtableHighGuid(HighGuid::GameObject, GetEntry(), m_spawnId);
+                        time_t linkedRespawntime = GetMap()->GetLinkedRespawnTime(dbtableHighGuid);
+                        if (linkedRespawntime)             // Can't respawn, the master is dead
+                        {
+                            ObjectGuid targetGuid = sObjectMgr->GetLinkedRespawnGuid(dbtableHighGuid);
+                            if (targetGuid == dbtableHighGuid) // if linking self, never respawn (check delayed to next day)
+                                SetRespawnTime(DAY);
+                            else
+                                m_respawnTime = (now > linkedRespawntime ? now : linkedRespawntime) + urand(5, MINUTE); // else copy time from master and add a little
+                            SaveRespawnTime(); // also save to DB immediately
+                            return;
+                        }
 
-						m_respawnTime = 0;
-						m_SkillupList.clear();
-						m_usetimes = 0;
+                        m_respawnTime = 0;
+                        m_SkillupList.clear();
+                        m_usetimes = 0;
 
-						// If nearby linked trap exists, respawn it
-						if (GameObject* linkedTrap = GetLinkedTrap())
-							linkedTrap->SetLootState(GO_READY);
+                        // If nearby linked trap exists, respawn it
+                        if (GameObject* linkedTrap = GetLinkedTrap())
+                            linkedTrap->SetLootState(GO_READY);
 
-						switch (GetGoType())
-						{
-						case GAMEOBJECT_TYPE_FISHINGNODE:   //  can't fish now
-						{
-							Unit* caster = GetOwner();
-							if (caster && caster->GetTypeId() == TYPEID_PLAYER)
-							{
-								caster->ToPlayer()->RemoveGameObject(this, false);
+                        switch (GetGoType())
+                        {
+                        case GAMEOBJECT_TYPE_FISHINGNODE:   //  can't fish now
+                        {
+                            Unit* caster = GetOwner();
+                            if (caster && caster->GetTypeId() == TYPEID_PLAYER)
+                            {
+                                caster->ToPlayer()->RemoveGameObject(this, false);
 
-								WorldPacket data(SMSG_FISH_ESCAPED, 0);
-								caster->ToPlayer()->SendDirectMessage(&data);
-							}
-							// can be delete
-							m_lootState = GO_JUST_DEACTIVATED;
-							return;
-						}
-						case GAMEOBJECT_TYPE_DOOR:
-						case GAMEOBJECT_TYPE_BUTTON:
-							// We need to open doors if they are closed (add there another condition if this code breaks some usage, but it need to be here for battlegrounds)
-							if (GetGoState() != GO_STATE_READY)
-								ResetDoorOrButton();
-							break;
-						case GAMEOBJECT_TYPE_FISHINGHOLE:
-							// Initialize a new max fish count on respawn
-							m_goValue.FishingHole.MaxOpens = urand(GetGOInfo()->fishinghole.minSuccessOpens, GetGOInfo()->fishinghole.maxSuccessOpens);
-							break;
-						default:
-							break;
-						}
+                                WorldPacket data(SMSG_FISH_ESCAPED, 0);
+                                caster->ToPlayer()->SendDirectMessage(&data);
+                            }
+                            // can be delete
+                            m_lootState = GO_JUST_DEACTIVATED;
+                            return;
+                        }
+                        case GAMEOBJECT_TYPE_DOOR:
+                        case GAMEOBJECT_TYPE_BUTTON:
+                            // We need to open doors if they are closed (add there another condition if this code breaks some usage, but it need to be here for battlegrounds)
+                            if (GetGoState() != GO_STATE_READY)
+                                ResetDoorOrButton();
+                            break;
+                        case GAMEOBJECT_TYPE_FISHINGHOLE:
+                            // Initialize a new max fish count on respawn
+                            m_goValue.FishingHole.MaxOpens = urand(GetGOInfo()->fishinghole.minSuccessOpens, GetGOInfo()->fishinghole.maxSuccessOpens);
+                            break;
+                        default:
+                            break;
+                        }
 
-						// Despawn timer
-						if (!m_spawnedByDefault)
-						{
-							// Can be despawned or destroyed
-							SetLootState(GO_JUST_DEACTIVATED);
-							return;
-						}
+                        // Despawn timer
+                        if (!m_spawnedByDefault)
+                        {
+                            // Can be despawned or destroyed
+                            SetLootState(GO_JUST_DEACTIVATED);
+                            return;
+                        }
 
-						// Call AI Reset (required for example in SmartAI to clear one time events)
-						if (AI())
-							AI()->Reset();
+                        // Call AI Reset (required for example in SmartAI to clear one time events)
+                        if (AI())
+                            AI()->Reset();
 
-						// Respawn timer
-						uint32 poolid = GetSpawnId() ? sPoolMgr->IsPartOfAPool<GameObject>(GetSpawnId()) : 0;
-						if (poolid)
-							sPoolMgr->UpdatePool<GameObject>(poolid, GetSpawnId());
-						else
-							GetMap()->AddToMap(this);
-					}
-				}
-			}
+                        // Respawn timer
+                        uint32 poolid = GetSpawnId() ? sPoolMgr->IsPartOfAPool<GameObject>(GetSpawnId()) : 0;
+                        if (poolid)
+                            sPoolMgr->UpdatePool<GameObject>(poolid, GetSpawnId());
+                        else
+                            GetMap()->AddToMap(this);
+                    }
+                }
+            }
 
-			// Set respawn timer
-			if (!m_respawnCompatibilityMode && m_respawnTime > 0)
-				SaveRespawnTime(0, false);
+            // Set respawn timer
+            if (!m_respawnCompatibilityMode && m_respawnTime > 0)
+                SaveRespawnTime(0, false);
 
-			if (isSpawned())
-			{
-				GameObjectTemplate const* goInfo = GetGOInfo();
-				if (goInfo->type == GAMEOBJECT_TYPE_TRAP)
-				{
-					if (m_cooldownTime >= time(NULL))
-						break;
+            if (isSpawned())
+            {
+                GameObjectTemplate const* goInfo = GetGOInfo();
+                if (goInfo->type == GAMEOBJECT_TYPE_TRAP)
+                {
+                    if (m_cooldownTime >= time(NULL))
+                        break;
 
-					// Type 2 (bomb) does not need to be triggered by a unit and despawns after casting its spell.
-					if (goInfo->trap.type == 2)
-					{
-						SetLootState(GO_ACTIVATED);
-						break;
-					}
+                    // Type 2 (bomb) does not need to be triggered by a unit and despawns after casting its spell.
+                    if (goInfo->trap.type == 2)
+                    {
+                        SetLootState(GO_ACTIVATED);
+                        break;
+                    }
 
-					// Type 0 despawns after being triggered, type 1 does not.
-					/// @todo This is activation radius. Casting radius must be selected from spell data.
-					float radius;
-					if (!goInfo->trap.diameter)
-					{
-						// Battleground traps: data2 == 0 && data5 == 3
-						if (goInfo->trap.cooldown != 3)
-							break;
+                    // Type 0 despawns after being triggered, type 1 does not.
+                    /// @todo This is activation radius. Casting radius must be selected from spell data.
+                    float radius;
+                    if (!goInfo->trap.diameter)
+                    {
+                        // Battleground traps: data2 == 0 && data5 == 3
+                        if (goInfo->trap.cooldown != 3)
+                            break;
 
-						radius = 3.f;
-					}
-					else
-						radius = goInfo->trap.diameter / 2.f;
+                        radius = 3.f;
+                    }
+                    else
+                        radius = goInfo->trap.diameter / 2.f;
 
-					// Pointer to appropriate target if found any
-					Unit* target = nullptr;
+                    // Pointer to appropriate target if found any
+                    Unit* target = nullptr;
 
-					/// @todo this hack with search required until GO casting not implemented
-					if (Unit* owner = GetOwner())
-					{
-						// Hunter trap: Search units which are unfriendly to the trap's owner
-						Trinity::NearestAttackableNoTotemUnitInObjectRangeCheck checker(this, owner, radius);
-						Trinity::UnitLastSearcher<Trinity::NearestAttackableNoTotemUnitInObjectRangeCheck> searcher(this, target, checker);
-						VisitNearbyObject(radius, searcher);
-					}
-					else
-					{
-						// Environmental trap: Any player
-						Player* player = nullptr;
-						Trinity::AnyPlayerInObjectRangeCheck checker(this, radius);
-						Trinity::PlayerSearcher<Trinity::AnyPlayerInObjectRangeCheck> searcher(this, player, checker);
-						VisitNearbyWorldObject(radius, searcher);
-						target = player;
-					}
+                    /// @todo this hack with search required until GO casting not implemented
+                    if (Unit* owner = GetOwner())
+                    {
+                        // Hunter trap: Search units which are unfriendly to the trap's owner
+                        Trinity::NearestAttackableNoTotemUnitInObjectRangeCheck checker(this, owner, radius);
+                        Trinity::UnitLastSearcher<Trinity::NearestAttackableNoTotemUnitInObjectRangeCheck> searcher(this, target, checker);
+                        VisitNearbyObject(radius, searcher);
+                    }
+                    else
+                    {
+                        // Environmental trap: Any player
+                        Player* player = nullptr;
+                        Trinity::AnyPlayerInObjectRangeCheck checker(this, radius);
+                        Trinity::PlayerSearcher<Trinity::AnyPlayerInObjectRangeCheck> searcher(this, player, checker);
+                        VisitNearbyWorldObject(radius, searcher);
+                        target = player;
+                    }
 
-					if (target)
-						SetLootState(GO_ACTIVATED, target);
+                    if (target)
+                        SetLootState(GO_ACTIVATED, target);
 
-				}
-				else if (uint32 max_charges = goInfo->GetCharges())
-				{
-					if (m_usetimes >= max_charges)
-					{
-						m_usetimes = 0;
-						SetLootState(GO_JUST_DEACTIVATED);      // can be despawned or destroyed
-					}
-				}
-			}
+                }
+                else if (uint32 max_charges = goInfo->GetCharges())
+                {
+                    if (m_usetimes >= max_charges)
+                    {
+                        m_usetimes = 0;
+                        SetLootState(GO_JUST_DEACTIVATED);      // can be despawned or destroyed
+                    }
+                }
+            }
 
-			break;
-		}
+            break;
+        }
         case GO_ACTIVATED:
         {
             switch (GetGoType())

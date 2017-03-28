@@ -248,16 +248,16 @@ void npc_escortAI::UpdateAI(uint32 diff)
                         return;
                     }
 
-					if (m_bCanInstantRespawn && !sWorld->getBoolConfig(CONFIG_RESPAWN_DYNAMIC_ESCORTNPC))
+                    if (m_bCanInstantRespawn && !sWorld->getBoolConfig(CONFIG_RESPAWN_DYNAMIC_ESCORTNPC))
                     {
                         me->setDeathState(JUST_DIED);
                         me->Respawn();
                     }
-					else if (sWorld->getBoolConfig(CONFIG_RESPAWN_DYNAMIC_ESCORTNPC))
-					{
-						me->GetMap()->RemoveCreatureRespawnTime(me->GetSpawnId(), 0, 0, true);
-						me->DespawnOrUnsummon();
-					}
+                    else if (sWorld->getBoolConfig(CONFIG_RESPAWN_DYNAMIC_ESCORTNPC))
+                    {
+                        me->GetMap()->RemoveCreatureRespawnTime(me->GetSpawnId(), 0, 0, true);
+                        me->DespawnOrUnsummon();
+                    }
                     else
                         me->DespawnOrUnsummon();
 
@@ -294,20 +294,20 @@ void npc_escortAI::UpdateAI(uint32 diff)
             {
                 TC_LOG_DEBUG("scripts", "EscortAI failed because player/group was to far away or not found");
 
-				uint32 groupFlags = 0;
-					if (CreatureData const* cdata = me->GetCreatureData())
-					{
-						if (CreatureGroupTemplateData const* groupData = cdata->groupdata)
-							groupFlags = groupData->flags;
-					}
-				
-				if (m_bCanInstantRespawn && !(sWorld->getBoolConfig(CONFIG_RESPAWN_DYNAMIC_ESCORTNPC) && (groupFlags & CREATUREGROUP_FLAG_ESCORTQUESTNPC)))
+                uint32 groupFlags = 0;
+                    if (CreatureData const* cdata = me->GetCreatureData())
+                    {
+                        if (CreatureGroupTemplateData const* groupData = cdata->groupdata)
+                            groupFlags = groupData->flags;
+                    }
+                
+                if (m_bCanInstantRespawn && !(sWorld->getBoolConfig(CONFIG_RESPAWN_DYNAMIC_ESCORTNPC) && (groupFlags & CREATUREGROUP_FLAG_ESCORTQUESTNPC)))
                 {
                     me->setDeathState(JUST_DIED);
                     me->Respawn();
                 }
-            	else if (m_bCanInstantRespawn && (sWorld->getBoolConfig(CONFIG_RESPAWN_DYNAMIC_ESCORTNPC) && (groupFlags & CREATUREGROUP_FLAG_ESCORTQUESTNPC)))
-					me->GetMap()->RemoveCreatureRespawnTime(me->GetSpawnId(), 0, 0, true);
+                else if (m_bCanInstantRespawn && (sWorld->getBoolConfig(CONFIG_RESPAWN_DYNAMIC_ESCORTNPC) && (groupFlags & CREATUREGROUP_FLAG_ESCORTQUESTNPC)))
+                    me->GetMap()->RemoveCreatureRespawnTime(me->GetSpawnId(), 0, 0, true);
                 else
                     me->DespawnOrUnsummon();
 
@@ -447,21 +447,21 @@ void npc_escortAI::SetRun(bool on)
 /// @todo get rid of this many variables passed in function.
 void npc_escortAI::Start(bool isActiveAttacker /* = true*/, bool run /* = false */, ObjectGuid playerGUID /* = 0 */, Quest const* quest /* = NULL */, bool instantRespawn /* = false */, bool canLoopPath /* = false */, bool resetWaypoints /* = true */)
 {
-	    // Queue respawn from the point it starts
-		if (Map* map = me->GetMap())
-		{
-			if (CreatureData const* cdata = me->GetCreatureData())
-			{
-				if (CreatureGroupTemplateData const* groupdata = cdata->groupdata)
-					{
-					if (sWorld->getBoolConfig(CONFIG_RESPAWN_DYNAMIC_ESCORTNPC) && (groupdata->flags & CREATUREGROUP_FLAG_ESCORTQUESTNPC) && !map->GetCreatureRespawnTime(me->GetSpawnId()))
-						{
-						me->SetRespawnTime(me->GetRespawnDelay());
-						me->SaveRespawnTime();
-						}
-					}
-				}
-		}
+        // Queue respawn from the point it starts
+        if (Map* map = me->GetMap())
+        {
+            if (CreatureData const* cdata = me->GetCreatureData())
+            {
+                if (CreatureGroupTemplateData const* groupdata = cdata->groupdata)
+                    {
+                    if (sWorld->getBoolConfig(CONFIG_RESPAWN_DYNAMIC_ESCORTNPC) && (groupdata->flags & CREATUREGROUP_FLAG_ESCORTQUESTNPC) && !map->GetCreatureRespawnTime(me->GetSpawnId()))
+                        {
+                        me->SetRespawnTime(me->GetRespawnDelay());
+                        me->SaveRespawnTime();
+                        }
+                    }
+                }
+        }
 
     if (me->GetVictim())
     {

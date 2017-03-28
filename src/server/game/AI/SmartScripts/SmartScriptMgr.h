@@ -557,10 +557,10 @@ enum SMART_ACTION
     SMART_ACTION_SET_CORPSE_DELAY                   = 116,    // timer
     SMART_ACTION_DISABLE_EVADE                      = 117,    // 0/1 (1 = disabled, 0 = enabled)
     SMART_ACTION_GO_SET_GO_STATE                    = 118,    // state
-	SMART_ACTION_SPAWN_CREATUREGROUP                = 119,    // Group ID, min secs, max secs
-	SMART_ACTION_DESPAWN_CREATUREGROUP              = 120,    // Group ID, min secs, max secs
-	SMART_ACTION_SPAWN_GAMEOBJECTGROUP              = 121,    // Group ID, min secs, max secs
-	SMART_ACTION_DESPAWN_GAMEOBJECTGROUP            = 122,    // Group ID, min secs, max secs
+    SMART_ACTION_SPAWN_CREATUREGROUP                = 119,    // Group ID, min secs, max secs
+    SMART_ACTION_DESPAWN_CREATUREGROUP              = 120,    // Group ID, min secs, max secs
+    SMART_ACTION_SPAWN_GAMEOBJECTGROUP              = 121,    // Group ID, min secs, max secs
+    SMART_ACTION_DESPAWN_GAMEOBJECTGROUP            = 122,    // Group ID, min secs, max secs
 
     SMART_ACTION_END                                = 123
 };
@@ -1076,13 +1076,13 @@ struct SmartAction
             uint32 disable;
         } disableEvade;
 
-		struct
-		{
-			uint32 groupId;
-			uint32 minDelay;
-			uint32 maxDelay;
-			uint32 spawnflags;
-		} groupSpawn;
+        struct
+        {
+            uint32 groupId;
+            uint32 minDelay;
+            uint32 maxDelay;
+            uint32 spawnflags;
+        } groupSpawn;
 
         //! Note for any new future actions
         //! All parameters must have type uint32
@@ -1101,10 +1101,10 @@ struct SmartAction
 
 enum SMARTAI_SPAWN_FLAGS
 {
-	SMARTAI_SPAWN_FLAG_NONE = 0x00,
-	SMARTAI_SPAWN_FLAG_IGNORE_RESPAWN = 0x01,
-	SMARTAI_SPAWN_FLAG_FORCE_SPAWN = 0x02,
-	SMARTAI_SPAWN_FLAG_NOSAVE_RESPAWN = 0x04,
+    SMARTAI_SPAWN_FLAG_NONE = 0x00,
+    SMARTAI_SPAWN_FLAG_IGNORE_RESPAWN = 0x01,
+    SMARTAI_SPAWN_FLAG_FORCE_SPAWN = 0x02,
+    SMARTAI_SPAWN_FLAG_NOSAVE_RESPAWN = 0x04,
 };
 
 
